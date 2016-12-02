@@ -20,7 +20,22 @@ iterate:
 	@docker-compose -f iterate.dc up -d
 
 build:
-	@docker run --rm -v $(PWD):/go/src/github.com/docker/v2c -v $(PWD)/bin:/go/bin -w /go/src/github.com/docker/v2c golang:1.7 go build
+	@docker run --rm \
+	  -v $(PWD):/go/src/github.com/docker/v2c \
+	  -v $(PWD)/bin:/go/bin \
+	  -w /go/src/github.com/docker/v2c \
+	  -e GOOS=linux \
+	  -e GOARCH=amd64 \
+	  golang:1.7 \
+	  go build -o bin/v2c-linux64
+	@docker run --rm \
+	  -v $(PWD):/go/src/github.com/docker/v2c \
+	  -v $(PWD)/bin:/go/bin \
+	  -w /go/src/github.com/docker/v2c \
+	  -e GOOS=darwin \
+	  -e GOARCH=amd64 \
+	  golang:1.7 \
+	  go build -o bin/v2c-darwin64
 
 release: build
 	@docker build -t docker/v2c:latest -f release.df .
