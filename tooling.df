@@ -1,3 +1,4 @@
 FROM golang:1.7
-RUN go get -u github.com/rancher/trash
+RUN go get -u github.com/rancher/trash && \
+    go get -u github.com/golang/lint/golint
 

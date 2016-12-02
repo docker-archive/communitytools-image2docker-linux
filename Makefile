@@ -19,7 +19,40 @@ iterate:
 	@docker-compose -f iterate.dc rm
 	@docker-compose -f iterate.dc up -d
 
-build:
+fmt:
+	# Formatting
+	@docker run --rm \
+	  -v $(PWD):/go/src/github.com/docker/v2c \
+	  -w /go/src/github.com/docker/v2c \
+	  docker/v2c:build-tooling \
+	  go fmt
+
+lint:
+	# Linting
+	@docker run --rm \
+	  -v $(PWD):/go/src/github.com/docker/v2c \
+	  -w /go/src/github.com/docker/v2c \
+	  docker/v2c:build-tooling \
+	  golint -set_exit_status
+
+test:
+	# Unit testing
+	@docker run --rm \
+	  -v $(PWD):/go/src/github.com/docker/v2c \
+	  -v $(PWD)/bin:/go/bin \
+	  -w /go/src/github.com/docker/v2c \
+	  golang:1.7 \
+	  go test
+	# Test coverage
+	@docker run --rm \
+	  -v $(PWD):/go/src/github.com/docker/v2c \
+	  -v $(PWD)/bin:/go/bin \
+	  -w /go/src/github.com/docker/v2c \
+	  golang:1.7 \
+	  go test -cover
+
+build: fmt lint test
+	# Building binaries
 	@docker run --rm \
 	  -v $(PWD):/go/src/github.com/docker/v2c \
 	  -v $(PWD)/bin:/go/bin \
