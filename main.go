@@ -101,7 +101,6 @@ func newApp() *cli.App {
 			},
 		},
 	}
-	app.Action = defaultHandler
 	return app
 }
 
