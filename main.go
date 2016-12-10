@@ -60,8 +60,14 @@ func newApp() *cli.App {
 					Action: listImageHandler,
 				},
 				{
-					Name:   `export`,
-					Usage:  `export a transformed image`,
+					Name:  `export`,
+					Usage: `export a transformed image`,
+					Flags: []cli.Flag{
+						cli.StringFlag{
+							Name:  `output, o`,
+							Usage: "Write to a `file` instad of STDOUT",
+						},
+					},
 					Action: exportImageHandler,
 				},
 			},
