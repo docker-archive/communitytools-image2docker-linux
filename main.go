@@ -158,7 +158,7 @@ func installDetectiveHandler(c *cli.Context) error {
 	if c.NArg() != 1 {
 		return errExactlyOne
 	}
-	fmt.Println("Installing detectives")
+	fmt.Println("Installing a detective")
 	return nil
 }
 
