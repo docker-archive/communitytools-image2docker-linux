@@ -3,6 +3,8 @@ package main
 import (
 	"errors"
 	"fmt"
+	"github.com/docker/v2c/api"
+	"github.com/docker/v2c/system"
 	"github.com/docker/v2c/workflow"
 	"github.com/urfave/cli"
 	"os"
@@ -133,31 +135,12 @@ func listDetectiveHandler(c *cli.Context) error {
 		return errExactlyNone
 	}
 
-	type detective struct {
-		Repository  string
-		Tag         string
-		Category    string
-		Description string
+	components, err := system.DetectComponents()
+	if err != nil {
+		return err
 	}
-	renderTabbed(`detectiveList`, os.Stdout, struct {
-		Detectives []detective
-	}{
-		Detectives: []detective{
-			detective{
-				Repository:  `repo`,
-				Tag:         `tag`,
-				Category:    `original`,
-				Description: `created`,
-			},
-			detective{
-				Repository:  `repo2`,
-				Tag:         `taggert`,
-				Category:    `crap`,
-				Description: `Some time in june`,
-			},
-		},
-	})
-	return nil
+
+	return renderTabbed(`detectiveList`, os.Stdout, components)
 }
 
 func installDetectiveHandler(c *cli.Context) error {
@@ -172,32 +155,12 @@ func listProvisionerHandler(c *cli.Context) error {
 	if c.NArg() > 0 {
 		return errExactlyNone
 	}
-
-	type provisioner struct {
-		Repository  string
-		Tag         string
-		Category    string
-		Description string
+	components, err := system.DetectComponents()
+	if err != nil {
+		return err
 	}
-	renderTabbed(`provisionerList`, os.Stdout, struct {
-		Provisioners []provisioner
-	}{
-		Provisioners: []provisioner{
-			provisioner{
-				Repository:  `repo`,
-				Tag:         `tag`,
-				Category:    `original`,
-				Description: `created`,
-			},
-			provisioner{
-				Repository:  `repo2`,
-				Tag:         `taggert`,
-				Category:    `crap`,
-				Description: `Some time in june`,
-			},
-		},
-	})
-	return nil
+
+	return renderTabbed(`provisionerList`, os.Stdout, components)
 }
 
 func installProvisionerHandler(c *cli.Context) error {
@@ -220,35 +183,17 @@ func listImageHandler(c *cli.Context) error {
 	if c.NArg() > 0 {
 		return errExactlyNone
 	}
-
-	type image struct {
-		ID         string
-		Repository string
-		Tag        string
-		Original   string
-		Created    string
+	products, err := system.ListProducedImages()
+	if err != nil {
+		return err
 	}
-	renderTabbed(`imageList`, os.Stdout, struct {
-		Images []image
+
+	return renderTabbed(`imageList`, os.Stdout, struct {
+		Products []api.Product
 	}{
-		Images: []image{
-			image{
-				ID:         `anid`,
-				Repository: `repo`,
-				Tag:        `tag`,
-				Original:   `original`,
-				Created:    `created`,
-			},
-			image{
-				ID:         `dina`,
-				Repository: `repo2`,
-				Tag:        `taggert`,
-				Original:   `crap`,
-				Created:    `Some time in june`,
-			},
-		},
-	})
-	return nil
+		Products: products,
+	},
+	)
 }
 
 func exportImageHandler(c *cli.Context) error {

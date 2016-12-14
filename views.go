@@ -22,8 +22,8 @@ func renderTabbed(name string, out io.Writer, data interface{}) error {
 }
 
 var views = map[string]string{
-	`imageList`: `ID	REPOSITORY	TAG	ORIGINAL	CREATED{{ range .Images }}
-{{.ID}}	{{.Repository}}	{{.Tag}}	{{.Original}}	{{.Created}}{{ end }}
+	`imageList`: `ID	REPOSITORY	TAG	ORIGINAL	CREATED{{ range .Products }}
+{{.ImageID}}	{{.Repository}}	{{.Tag}}	{{.Original}}	{{.Created}}{{ end }}
 `,
 	`detectiveList`: `REPOSITORY	TAG	CATEGORY	DESCRIPTION{{ range .Detectives }}
 {{.Repository}}	{{.Tag}}	{{.Category}}	{{.Description}}{{ end }}
