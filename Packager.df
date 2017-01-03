@@ -1,4 +1,6 @@
 FROM alpine:3.4
-LABEL com.docker.v2c.component=packager com.docker.v2c.component.category=demo\ category com.docker.v2c.component.description=demo\ packager\ description
+LABEL com.docker.v2c.component=packager \
+      com.docker.v2c.component.category=demo\ category \
+      com.docker.v2c.component.description=demo\ packager\ description
 ENTRYPOINT ["/bin/sh", "-c"]
 CMD echo BOOP
