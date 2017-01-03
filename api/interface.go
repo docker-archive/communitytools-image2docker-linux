@@ -6,6 +6,7 @@ type Detective struct {
 	Tag string
 	Category string
 	Description string
+	Related string
 }
 type Provisioner struct {
 	ImageID string

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/docker/v2c/api"
@@ -8,6 +9,8 @@ import (
 	"github.com/docker/v2c/workflow"
 	"github.com/urfave/cli"
 	"os"
+	"os/signal"
+	"path/filepath"
 )
 
 const name string = `v2c`
@@ -52,8 +55,18 @@ func newApp() *cli.App {
 			Category: `Transform`,
 			Subcommands: []cli.Command{
 				{
-					Name:   `rm`,
-					Usage:  `remove a transformed image`,
+					Name:  `rm`,
+					Usage: `remove a transformed image`,
+					Flags: []cli.Flag{
+						cli.BoolFlag{
+							Name:  `force, f`,
+							Usage: `Remove any running containers that may be using IMAGE`,
+						},
+						cli.BoolFlag{
+							Name:  `no-prune`,
+							Usage: `Do no delete untagged parents`,
+						},
+					},
 					Action: removeImageHandler,
 				},
 				{
@@ -127,21 +140,34 @@ func buildHandler(c *cli.Context) error {
 		return errExactlyOne
 	}
 	fmt.Println("Running image transformation.")
-	return nil
-}
 
-func listDetectiveHandler(c *cli.Context) error {
-	if c.NArg() > 0 {
-		return errExactlyNone
+	abs, err := filepath.Abs(c.Args().Get(0))
+	if err != nil {
+		return err
 	}
-
-	components, err := system.DetectComponents()
+	_, err = os.Stat(abs)
 	if err != nil {
 		return err
 	}
 
-	return renderTabbed(`detectiveList`, os.Stdout, components)
+	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+	)
+	ctx, cancel = context.WithCancel(context.Background())
+
+	go func(cancel context.CancelFunc) {
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, os.Interrupt)
+		<-c
+		cancel()
+	}(cancel)
+
+	_, err = workflow.Build(ctx, abs)
+	return err
 }
+
+// management handlers
 
 func installDetectiveHandler(c *cli.Context) error {
 	if c.NArg() != 1 {
@@ -149,18 +175,6 @@ func installDetectiveHandler(c *cli.Context) error {
 	}
 	fmt.Println("Installing a detective")
 	return nil
-}
-
-func listProvisionerHandler(c *cli.Context) error {
-	if c.NArg() > 0 {
-		return errExactlyNone
-	}
-	components, err := system.DetectComponents()
-	if err != nil {
-		return err
-	}
-
-	return renderTabbed(`provisionerList`, os.Stdout, components)
 }
 
 func installProvisionerHandler(c *cli.Context) error {
@@ -175,12 +189,22 @@ func removeImageHandler(c *cli.Context) error {
 	if c.NArg() < 1 {
 		return errAtLeastOne
 	}
-	fmt.Println("Removing an image")
+	gone, ie := system.RemoveProducts(c.Args(), c.Bool(`force`), !c.Bool(`no-prune`))
+	return renderRemoved(os.Stdout, gone, ie)
+}
+
+func exportImageHandler(c *cli.Context) error {
+	if c.NArg() != 1 {
+		return errExactlyOne
+	}
+	fmt.Println("Exporting an image")
 	return nil
 }
 
+// list handlers
+
 func listImageHandler(c *cli.Context) error {
-	if c.NArg() > 0 {
+	if c.Args().Present() {
 		return errExactlyNone
 	}
 	products, err := system.ListProducedImages()
@@ -196,10 +220,27 @@ func listImageHandler(c *cli.Context) error {
 	)
 }
 
-func exportImageHandler(c *cli.Context) error {
-	if c.NArg() != 1 {
-		return errExactlyOne
+func listProvisionerHandler(c *cli.Context) error {
+	if c.NArg() > 0 {
+		return errExactlyNone
 	}
-	fmt.Println("Exporting an image")
-	return nil
+	components, err := system.DetectComponents()
+	if err != nil {
+		return err
+	}
+
+	return renderTabbed(`provisionerList`, os.Stdout, components)
+}
+
+func listDetectiveHandler(c *cli.Context) error {
+	if c.NArg() > 0 {
+		return errExactlyNone
+	}
+
+	components, err := system.DetectComponents()
+	if err != nil {
+		return err
+	}
+
+	return renderTabbed(`detectiveList`, os.Stdout, components)
 }
