@@ -1,0 +1,3 @@
+FROM alpine:3.4
+LABEL com.docker.v2c.component=provisioner com.docker.v2c.component.category=demo\ category com.docker.v2c.component.description=demo\ provisioner\ description
+ENTRYPOINT ["tar", "xf", "-", "-O"]

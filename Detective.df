@@ -1,0 +1,4 @@
+FROM alpine:3.4
+COPY ./load1.tar /load.tar
+LABEL com.docker.v2c.component=detective com.docker.v2c.component.category=demo\ category com.docker.v2c.component.rel=v2c/some_provisioner:v1.8
+CMD cat /load.tar
