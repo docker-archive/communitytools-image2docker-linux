@@ -1,0 +1,13 @@
+package: .
+import:
+- package: github.com/mattn/go-shellwords
+- package: github.com/stretchr/testify
+- package: github.com/xeipuuv/gojsonreference
+- package: github.com/xeipuuv/gojsonschema
+- package: gopkg.in/yaml.v2
+- package: github.com/docker/go-units
+- package: github.com/mitchellh/mapstructure
+- package: github.com/docker/docker
+  version: ~1.12.3
+  subpackages:
+  - runconfig/opts

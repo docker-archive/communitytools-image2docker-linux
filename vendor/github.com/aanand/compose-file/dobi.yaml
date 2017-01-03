@@ -1,0 +1,48 @@
+
+meta:
+    project: compose-file
+
+
+mount=source:
+    bind: .
+    path: /go/src/github.com/aanand/compose-file
+
+
+image=builder:
+    image: compose-file-dev
+    context: dockerfiles/
+    dockerfile: Dockerfile.build
+
+
+job=shell:
+    use: builder
+    interactive: true
+    mounts: [source]
+    command: bash
+
+job=test-unit:
+    use: builder
+    mounts: [source]
+    command: "bash -c 'go test -v $(glide novendor)'"
+
+job=deps:
+    use: builder
+    mounts: [source]
+    command: "glide install"
+    artifact: vendor/
+
+job=generate:
+    use: builder
+    mounts: [source]
+    command: "go generate ./schema"
+    artifact: schema/bindata.go
+
+job=watch:
+    use: builder
+    mounts: [source]
+    command: "script/watch"
+    interactive: true
+
+
+alias=test:
+    tasks: [test-unit]
