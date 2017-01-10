@@ -19,8 +19,8 @@ type detectiveResponse struct {
 
 type provisionerResponse struct {
 	Provisioner api.Provisioner
-	Category string
-	Tarball *bytes.Buffer
+	Category    string
+	Tarball     *bytes.Buffer
 }
 
 func Build(ctx context.Context, target string) (string, error) {
@@ -46,7 +46,7 @@ func Build(ctx context.Context, target string) (string, error) {
 	// Launch Detectives
 	dr := make(chan detectiveResponse)
 	for _, d := range components.Detectives {
-		go launchDetective(ctx, d, pc, dr) 
+		go launchDetective(ctx, d, pc, dr)
 	}
 
 	// Collect Detective responses
@@ -104,11 +104,10 @@ func Build(ctx context.Context, target string) (string, error) {
 		return ``, err
 	}
 
-
 	// Dockerfile assembly phases
 	// FROM > COPY/ADD > EXPORT > ENV > RUN > SHELL/ENTRYPOINT/COMMAND
 
-	// TODO: run docker build 
+	// TODO: run docker build
 
 	return ``, errNotYetImplemented
 }
@@ -123,7 +122,7 @@ func launchProvisioners(ctx context.Context, components system.Components, c cha
 		var p api.Provisioner
 		for _, p = range components.Provisioners {
 			if s := fmt.Sprintf("%v:%v", p.Repository, p.Tag); s == r.Next {
-				break			
+				break
 			}
 		}
 
@@ -138,13 +137,13 @@ func collectDetectiveResponses(ctx context.Context, c int, rc chan detectiveResp
 	}
 	for i := 0; i < c; i++ {
 		select {
-			case <- ctx.Done():
-				return errors.New(`Task cancelled or late.`)
-			case r := <-rc:
-				if r.Tarball == nil {
-					continue
-				}
-				*rs = append(*rs, r)
+		case <-ctx.Done():
+			return errors.New(`Task cancelled or late.`)
+		case r := <-rc:
+			if r.Tarball == nil {
+				continue
+			}
+			*rs = append(*rs, r)
 		}
 	}
 	return nil
@@ -156,22 +155,21 @@ func collectProvisionerResponses(ctx context.Context, c int, rc chan provisioner
 	}
 	for i := 0; i < c; i++ {
 		select {
-			case <- ctx.Done():
-				return errors.New(`Task cancelled or late.`)
-			case pr := <-rc:
-				rs[pr.Category] = append(rs[pr.Category], pr)
+		case <-ctx.Done():
+			return errors.New(`Task cancelled or late.`)
+		case pr := <-rc:
+			rs[pr.Category] = append(rs[pr.Category], pr)
 		}
-        }
+	}
 	return nil
 }
-
 
 func choosePackager(c system.Components) api.Packager {
 	return c.Packagers[0]
 }
 
 //
-// launch control 
+// launch control
 //
 
 func launchDetective(ctx context.Context, d api.Detective, pc string, drc chan detectiveResponse) {
@@ -183,14 +181,14 @@ func launchDetective(ctx context.Context, d api.Detective, pc string, drc chan d
 	go system.LaunchDetective(ctx, pc, tbc, d)
 
 	select {
-		case r.Tarball = <- tbc:
-		case <-ctx.Done():
-			close(tbc)
+	case r.Tarball = <-tbc:
+	case <-ctx.Done():
+		close(tbc)
 	}
 
 	select {
-		case <-ctx.Done():
-		case drc <- r:
+	case <-ctx.Done():
+	case drc <- r:
 	}
 }
 
@@ -203,9 +201,9 @@ func launchProvisioner(ctx context.Context, p api.Provisioner, in *bytes.Buffer,
 	go system.LaunchProvisioner(ctx, in, tbc, p)
 
 	select {
-		case r.Tarball = <-tbc:
-			prc <- r
-		case <-ctx.Done():
-			close(tbc)
+	case r.Tarball = <-tbc:
+		prc <- r
+	case <-ctx.Done():
+		close(tbc)
 	}
 }

@@ -1,16 +1,16 @@
 package workflow
 
 import (
+	"archive/tar"
 	"bytes"
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
+	"github.com/docker/v2c/api"
 	"io"
 	"io/ioutil"
-	"encoding/json"
 	"os"
 	path "path/filepath"
-	"archive/tar"
-	"github.com/docker/v2c/api"
 )
 
 type manifest struct {
@@ -27,17 +27,16 @@ type readableResults struct {
 //
 //}
 
-
 func fetchContributedDockerfile(m manifest) ([]byte, error) {
 	fmt.Printf("Manifest: %v\n", m)
 	if m.TarballName == `` {
 		return []byte{}, nil
 	}
 	dn, _, err := cwdAndPerms()
-        if err != nil {
+	if err != nil {
 		return nil, err
 	}
-	f, err := os.OpenFile(path.Join(dn, m.Provisioner.Category , m.TarballName), os.O_RDONLY, 0666)
+	f, err := os.OpenFile(path.Join(dn, m.Provisioner.Category, m.TarballName), os.O_RDONLY, 0666)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +68,7 @@ func appendDockerfile(b *bytes.Buffer) error {
 	if err != nil {
 		return err
 	}
-	f, err := os.OpenFile(path.Join(dn, "Dockerfile"), os.O_APPEND | os.O_WRONLY | os.O_CREATE, p)
+	f, err := os.OpenFile(path.Join(dn, "Dockerfile"), os.O_APPEND|os.O_WRONLY|os.O_CREATE, p)
 	if err != nil {
 		return err
 	}
@@ -101,7 +100,7 @@ func persistProvisionerResults(r map[string][]provisionerResponse) (map[string][
 	}
 
 	// TODO: check write access
-	
+
 	manifests := map[string][]manifest{}
 
 	for c, prs := range r {
@@ -135,5 +134,3 @@ func persistProvisionerResults(r map[string][]provisionerResponse) (map[string][
 	}
 	return manifests, nil
 }
-
-

@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	path "path/filepath"
 	"github.com/docker/docker/builder/dockerfile/parser"
+	path "path/filepath"
 )
 
 func getAddDirectivesForTars(ms []manifest) ([]byte, error) {
@@ -45,7 +45,7 @@ func applyOSCategory(c []manifest) error {
 	dfb := bytes.NewBuffer(df)
 	dfb.WriteString("\n")
 	return appendDockerfile(dfb)
-	
+
 }
 
 func applyApplicationCategory(c []manifest) error {
@@ -54,7 +54,7 @@ func applyApplicationCategory(c []manifest) error {
 	var b bytes.Buffer
 	for _, m := range c {
 		// The ADD instruction unpacks the tar file at the root.
-		// Only files with the exact same fully qualified name will be in conflict. 
+		// Only files with the exact same fully qualified name will be in conflict.
 		// This isn't a problem because all these files are being sourced from the same vmdk.
 		// In this special case conflicts are simply redundant.
 		b.WriteString(fmt.Sprintf("ADD ./%s/%s /\n", m.Provisioner.Category, m.TarballName))
@@ -76,20 +76,20 @@ func applyApplicationCategory(c []manifest) error {
 			}
 			if len(root.Children) > 0 {
 				for _, child := range root.Children {
-					if child.Value == `from` || 
-					   child.Value == `shell` || 
-					   child.Value == `entrypoint` ||
-					   child.Value == `cmd` ||
-					   child.Value == `onbuild` ||
-					   child.Value == `stopsignal` ||
-					   child.Value == `maintainer` ||
-					   child.Value == `healthcheck` {
+					if child.Value == `from` ||
+						child.Value == `shell` ||
+						child.Value == `entrypoint` ||
+						child.Value == `cmd` ||
+						child.Value == `onbuild` ||
+						child.Value == `stopsignal` ||
+						child.Value == `maintainer` ||
+						child.Value == `healthcheck` {
 						return errors.New(fmt.Sprintf("Illegal instruction in application category Dockerfile fragment: %v contributed by %v:%v", child.Value, m.Provisioner.Repository, m.Provisioner.Tag))
 					}
 				}
 				b.Write(df)
 				b.WriteString("\n")
-				
+
 			}
 		}
 	}
