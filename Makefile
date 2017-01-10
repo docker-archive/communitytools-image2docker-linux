@@ -75,9 +75,9 @@ release: build
 	@docker tag docker/v2c:latest docker/v2c:poc
 
 democlean:
-	@docker rmi v2c/packager:demo v2c/os.ubuntu-detective:v16.04 v2c/app.random-detective:1 v2c/ubuntu-provisioner:v16.04 v2c/app.random.provisioner:1
+	@docker rmi $(docker images --filter label=com.docker.v2c.component -aq)
 
-demoprep: democlean
+demoprep:
 	@docker build -t v2c/packager:demo -f ./packager/Packager.df ./packager/
 	@docker build -t v2c/os.ubuntu-detective:v16.04 -f ./detectives/os.ubuntu16.04.df ./detectives/
 	@docker build -t v2c/app.random-detective:1 -f ./detectives/app.random1.df ./detectives/
