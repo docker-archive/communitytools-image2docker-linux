@@ -125,16 +125,6 @@ func newApp() *cli.App {
 	return app
 }
 
-func defaultHandler(c *cli.Context) error {
-	err := workflow.Start()
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("BOOM")
-
-	return nil
-}
-
 func buildHandler(c *cli.Context) error {
 	if c.NArg() != 1 {
 		return errExactlyOne
