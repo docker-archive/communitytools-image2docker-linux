@@ -1,6 +1,9 @@
 FROM alpine:3.4
 LABEL com.docker.v2c.component=packager \
-      com.docker.v2c.component.category=demo\ category \
+      com.docker.v2c.component.category=demo \
       com.docker.v2c.component.description=demo\ packager\ description
-ENTRYPOINT ["/bin/sh", "-c"]
-CMD echo BOOP
+COPY ./copy.sh /copy.sh
+COPY ./payload.tar /payload.tar
+VOLUME ["/v2c/disk"]
+CMD /copy.sh
+

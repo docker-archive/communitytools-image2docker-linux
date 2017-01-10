@@ -38,6 +38,7 @@ type detectiveResponse struct {
 }
 
 type provisionerResponse struct {
+	Provisioner api.Provisioner
 	Category string
 	Tarball *bytes.Buffer
 }
@@ -73,7 +74,6 @@ func Build(ctx context.Context, target string) (string, error) {
 	collectDetectiveResponses(ctx, len(components.Detectives), dr, &detected)
 
 	pCount := len(detected)
-	fmt.Printf("Number of detected components: %v\n", pCount)
 
 	// Shutdown the Packager
 	err = system.RemoveContainer(ctx, pc)
@@ -97,14 +97,36 @@ func Build(ctx context.Context, target string) (string, error) {
 	results := map[string][]provisionerResponse{}
 	collectProvisionerResponses(ctx, pCount, prc, results)
 
-	fmt.Printf("Collected %v provisioner responses.\n", len(results))
-	fmt.Printf("Number of results in the 'demo category' category: %v\n", len(results[`demo category`]))
-	fmt.Printf("Number of bytes in the first entry in the 'demo category' category: %v\n", results[`demo category`][0].Tarball.Len())
+	//for category, prs := range results {
+	//	for _, tres := range prs {
+	//		fmt.Printf("Category: %v, Provisioner Tarball: %v\n\n", category, tres.Tarball)
+	//	}
+	//}
 
-	// At this point we have a fully analyzed image and proposals for provisioning.
-	// Need to process in category ordering - Operating System > Tooling > Platform > Application > Configuration
 	// We can cache at this point and prompt for conflict resolution if required.
-	// TODO: build context merge
+	// At this point we have a fully analyzed image and proposals for provisioning.
+	ms, err := persistProvisionerResults(results)
+	if err != nil {
+		return ``, err
+	}
+
+	// Build context assembly pipeline
+	// This could look like a pipeline where the result of one phase is piped to the next.
+	// But we'd end up copying an amazing amount of data in memory and pipelines / nested functions
+	// can be difficult to read. For the PoC we'll use a visitor pattern instead.
+	// Need to process in category ordering - Operating System > Tooling > Platform > Application > Configuration
+
+	if err = applyOSCategory(ms["os"]); err != nil {
+		return ``, err
+	}
+
+	if err = applyApplicationCategory(ms["application"]); err != nil {
+		return ``, err
+	}
+
+
+	// Dockerfile assembly phases
+	// FROM > COPY/ADD > EXPORT > ENV > RUN > SHELL/ENTRYPOINT/COMMAND
 
 	// TODO: run docker build 
 
@@ -118,7 +140,12 @@ func Build(ctx context.Context, target string) (string, error) {
 func launchProvisioners(ctx context.Context, components system.Components, c chan provisionerResponse, rs *[]detectiveResponse) error {
 	for _, r := range *rs {
 		// TODO: replace the following with a lookup for the detectiveResponse.Next
-		p := components.Provisioners[0]
+		var p api.Provisioner
+		for _, p = range components.Provisioners {
+			if s := fmt.Sprintf("%v:%v", p.Repository, p.Tag); s == r.Next {
+				break			
+			}
+		}
 
 		go launchProvisioner(ctx, p, r.Tarball, c)
 	}
@@ -189,14 +216,14 @@ func launchDetective(ctx context.Context, d api.Detective, pc string, drc chan d
 
 func launchProvisioner(ctx context.Context, p api.Provisioner, in *bytes.Buffer, prc chan provisionerResponse) {
 	r := provisionerResponse{
-		Category: p.Category,
+		Provisioner: p,
+		Category:    p.Category,
 	}
 	tbc := make(chan *bytes.Buffer)
 	go system.LaunchProvisioner(ctx, in, tbc, p)
 
 	select {
 		case r.Tarball = <-tbc:
-			fmt.Printf("RECEIVED PROVISIONER RESPONSE. Tarball length: %v\n", r.Tarball.Len())
 			prc <- r
 		case <-ctx.Done():
 			close(tbc)

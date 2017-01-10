@@ -2,6 +2,7 @@ package system
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"fmt"
 	"io"
 	"context"
@@ -129,8 +130,6 @@ func LaunchPackager(ctx context.Context, p api.Packager) (string, error) {
 		return ``, err
 	}
 
-	fmt.Println(`About to create the packager`)
-
 	// Create
 	createResult, err := client.ContainerCreate(gcontext.Background(),
 		&container.Config{
@@ -142,13 +141,11 @@ func LaunchPackager(ctx context.Context, p api.Packager) (string, error) {
 		&network.NetworkingConfig{
 
 		},
-		`v2c_packager`,
+		fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%v/%v", p.Repository, p.Tag)))),
 	)
 	if err != nil {
 		return ``, err
 	}
-
-	fmt.Printf("Packager container created at: %v\n", createResult.ID)
 
 	// Run
 	err = client.ContainerStart(gcontext.Background(),
@@ -173,7 +170,6 @@ func LaunchDetective(ctx context.Context, pc string, c chan *bytes.Buffer, d api
 
 	// Start a container from the image described by d
 	// include Volumes From pc
-	fmt.Printf("Creating detective: %v:%v\n", d.Repository, d.Tag)
 
 	// Create
 	createResult, err := client.ContainerCreate(gcontext.Background(),
@@ -181,18 +177,16 @@ func LaunchDetective(ctx context.Context, pc string, c chan *bytes.Buffer, d api
 			Image: fmt.Sprintf(`%v:%v`, d.Repository, d.Tag),
 		},
 		&container.HostConfig{
-
+			VolumesFrom: []string{pc},
 		},
 		&network.NetworkingConfig{
 
 		},
-		`junk-detective`,
+		fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%v/%v", d.Repository, d.Tag)))),
 	)
 	if err != nil {
 		panic(err)
 	}
-
-	fmt.Printf("Detective container created at: %v\n", createResult.ID)
 
 	// attach to the container
 	attachment, err := client.ContainerAttach(gcontext.Background(), createResult.ID, types.ContainerAttachOptions{ Stdin: false, Stdout: true, Stream: true })
@@ -253,8 +247,6 @@ func LaunchProvisioner(ctx context.Context, in *bytes.Buffer, c chan *bytes.Buff
 		panic(err)
 	}
 
-	fmt.Printf("Starting provisioner: %v:%v\n", p.Repository, p.Tag)
-
 	// Start a container from the image described by p
 	createResult, err := client.ContainerCreate(gcontext.Background(),
 		&container.Config{
@@ -269,13 +261,11 @@ func LaunchProvisioner(ctx context.Context, in *bytes.Buffer, c chan *bytes.Buff
 		&network.NetworkingConfig{
 
 		},
-		`junk-provisioner`,
+		fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%v/%v", p.Repository, p.Tag)))),
 	)
 	if err != nil {
 		panic(err)
 	}
-
-	fmt.Printf("Provisioner container created at: %v\n", createResult.ID)
 
 	// attach to the container
 	attachment, err := client.ContainerAttach(gcontext.Background(), createResult.ID, types.ContainerAttachOptions{ Stdin: true, Stdout: true, Stream: true })
@@ -296,8 +286,7 @@ func LaunchProvisioner(ctx context.Context, in *bytes.Buffer, c chan *bytes.Buff
 	}
 
 	// write the data from in to the con
-	wc, err := in.WriteTo(attachment.Conn)
-	fmt.Printf("Wrote %v bytes to the container.\n", wc)
+	_, err = in.WriteTo(attachment.Conn)
 	if err != nil {
 		panic(err)
 	}
@@ -323,7 +312,6 @@ func LaunchProvisioner(ctx context.Context, in *bytes.Buffer, c chan *bytes.Buff
 		panic(err)
 	}
 	if code != 0 {
-		fmt.Printf("Provisioner had no results: %v\n", code)
 		return
 	}
 
