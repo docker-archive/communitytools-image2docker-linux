@@ -14,11 +14,6 @@ update-deps:
 update-vendor:
 	@docker run --rm -v $(PWD):/go/src/github.com/docker/v2c -w /go/src/github.com/docker/v2c docker/v2c:build-tooling trash
 
-iterate:
-	@docker-compose -f iterate.dc kill
-	@docker-compose -f iterate.dc rm
-	@docker-compose -f iterate.dc up -d
-
 fmt:
 	# Formatting
 	@docker run --rm \
@@ -81,10 +76,14 @@ demoprep:
 	@docker build -t v2c/packager:demo -f ./packager/Packager.df ./packager/
 	@docker build -t v2c/os.ubuntu-detective:v16.04 -f ./detectives/os.ubuntu16.04.df ./detectives/
 	@docker build -t v2c/app.random-detective:1 -f ./detectives/app.random1.df ./detectives/
+	@docker build -t v2c/app.random-detective:2 -f ./detectives/app.random2.df ./detectives/
+	@docker build -t v2c/app.random-detective:3 -f ./detectives/app.random3.df ./detectives/
 	@docker build -t v2c/ubuntu-provisioner:v16.04 -f ./provisioners/os.ubuntu16.04.df ./provisioners/
 	@docker build -t v2c/app.random.provisioner:1 -f ./provisioners/app.random1.df ./provisioners/
+	@docker build -t v2c/app.random.provisioner:2 -f ./provisioners/app.random2.df ./provisioners/
+	@docker build -t v2c/app.random.provisioner:3 -f ./provisioners/app.random3.df ./provisioners/
 
-demo-darwin: build 
+demo-darwin:
 	@bin/v2c-darwin64 build demo.vmdk
-demo-linux: build 
+demo-linux:
 	@bin/v2c-linux64 build demo.vmdk

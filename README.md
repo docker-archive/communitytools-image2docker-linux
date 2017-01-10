@@ -7,6 +7,7 @@ This codebase ships with a demo of the proof of concept. The goal of the proof o
 Prepare the demo by running:
 
     make prepare
+    make build
     make demoprep
 
 Run the demo on OSX with:

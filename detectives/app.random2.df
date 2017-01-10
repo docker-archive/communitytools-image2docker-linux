@@ -1,0 +1,8 @@
+FROM alpine:3.4
+RUN mkdir -p /etc/app.random2/conf.d
+COPY ./app.random2/app.conf /etc/app.random2/conf.d/app.conf
+COPY ./app.random2/server.conf /etc/app.random2/server.conf
+LABEL com.docker.v2c.component=detective \
+      com.docker.v2c.component.category=application \
+      com.docker.v2c.component.rel=v2c/app.random.provisioner:2
+CMD cd /v2c/disk && tar cf - etc/app.random2/conf.d/app.conf etc/app.random2/server.conf

@@ -1,0 +1,8 @@
+FROM alpine:3.4
+LABEL com.docker.v2c.component=provisioner \
+      com.docker.v2c.component.category=application \
+      com.docker.v2c.component.description=demo\ provisioner\ description
+WORKDIR /
+COPY ./app.random2/tar-append /bin/tar-append
+COPY ./app.random2/script.sh /script.sh
+ENTRYPOINT ["/bin/sh", "-c", "/script.sh"]

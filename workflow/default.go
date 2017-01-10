@@ -109,7 +109,7 @@ func Build(ctx context.Context, target string) (string, error) {
 
 	// TODO: run docker build
 
-	return ``, errNotYetImplemented
+	return ``, nil
 }
 
 //
@@ -183,8 +183,8 @@ func launchDetective(ctx context.Context, d api.Detective, pc string, drc chan d
 	select {
 	case r.Tarball = <-tbc:
 	case <-ctx.Done():
-		close(tbc)
 	}
+	close(tbc)
 
 	select {
 	case <-ctx.Done():
@@ -204,6 +204,6 @@ func launchProvisioner(ctx context.Context, p api.Provisioner, in *bytes.Buffer,
 	case r.Tarball = <-tbc:
 		prc <- r
 	case <-ctx.Done():
-		close(tbc)
 	}
+	close(tbc)
 }

@@ -227,7 +227,7 @@ func LaunchDetective(ctx context.Context, pc string, c chan *bytes.Buffer, d api
 	}
 	if code != 0 {
 		fmt.Printf("Detective had no results: %v\n", code)
-		return
+		stdout = nil
 	}
 
 	// Cleanup the detective container
