@@ -35,9 +35,14 @@ func applyOSCategory(c []manifest) error {
 	if err != nil {
 		return err
 	}
-	if len(root.Children) != 1 || root.Children[0].Value != `from` {
-		return errors.New(`Provisioners in the OS category may only contribute a single FROM instruction.`)
+	if len(root.Children) <= 0 {
+		return nil
 	}
+
+	if bad := verifyContributedInstructionsForCategory(`os`, root); bad != `` {
+		return errors.New(fmt.Sprintf(`Provisioners in the OS category may only contribute a single FROM instruction. Illegal instructions: %v`, bad))
+	}
+
 	// Add an extra newline
 	dfb := bytes.NewBuffer(df)
 	dfb.WriteString("\n")
@@ -45,11 +50,11 @@ func applyOSCategory(c []manifest) error {
 
 }
 
-func applyApplicationCategory(c []manifest) error {
+func applyCategory(c string, ms []manifest) error {
 
 	// This visitor is going to take all of the tars in the category and add ADD instructions for them to /
 	var b bytes.Buffer
-	for _, m := range c {
+	for _, m := range ms {
 		// The ADD instruction unpacks the tar file at the root.
 		// Only files with the exact same fully qualified name will be in conflict.
 		// This isn't a problem because all these files are being sourced from the same vmdk.
@@ -72,19 +77,8 @@ func applyApplicationCategory(c []manifest) error {
 				return err
 			}
 			if len(root.Children) > 0 {
-				for _, child := range root.Children {
-					if child.Value == `from` ||
-						child.Value == `add` ||
-						child.Value == `copy` ||
-						child.Value == `shell` ||
-						child.Value == `entrypoint` ||
-						child.Value == `cmd` ||
-						child.Value == `onbuild` ||
-						child.Value == `stopsignal` ||
-						child.Value == `maintainer` ||
-						child.Value == `healthcheck` {
-						return errors.New(fmt.Sprintf("Illegal instruction in application category Dockerfile fragment: %v contributed by %v:%v", child.Value, m.Provisioner.Repository, m.Provisioner.Tag))
-					}
+				if bad := verifyContributedInstructionsForCategory(c, root); bad != `` {
+					return errors.New(fmt.Sprintf("Illegal instruction in %v category Dockerfile fragment: %v contributed by %v:%v", c, bad, m.Provisioner.Repository, m.Provisioner.Tag))
 				}
 				b.Write(df)
 				b.WriteString("\n")
@@ -95,3 +89,51 @@ func applyApplicationCategory(c []manifest) error {
 	return appendDockerfile(&b)
 }
 
+// detects illegal Dockerfile contributions by category
+func verifyContributedInstructionsForCategory(c string, root *parser.Node) string {
+	for _, child := range root.Children {
+		switch c {
+		case `os`:
+			// only allow from
+			if child.Value != `from` {
+				return child.Value
+			}
+		case `application`:
+			// allow anything but these
+			if child.Value == `from` ||
+				child.Value == `add` ||
+				child.Value == `copy` ||
+				child.Value == `shell` ||
+				child.Value == `entrypoint` ||
+				child.Value == `cmd` ||
+				child.Value == `onbuild` ||
+				child.Value == `stopsignal` ||
+				child.Value == `maintainer` ||
+				child.Value == `expose` ||
+				child.Value == `healthcheck` {
+				return child.Value
+			}
+		case `config`:
+			// allow anything but these
+			if child.Value == `from` ||
+				child.Value == `add` ||
+				child.Value == `copy` ||
+				child.Value == `shell` ||
+				child.Value == `entrypoint` ||
+				child.Value == `cmd` ||
+				child.Value == `onbuild` ||
+				child.Value == `stopsignal` ||
+				child.Value == `maintainer` ||
+				child.Value == `healthcheck` {
+				return child.Value
+			}
+		case `init`:
+			// only allow these two
+			if child.Value != `entrypoint` &&
+				child.Value != `cmd` {
+				return child.Value
+			}
+		}
+	}
+	return ``
+}

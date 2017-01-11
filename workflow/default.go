@@ -104,7 +104,7 @@ func Build(ctx context.Context, target string) (string, error) {
 		return ``, err
 	}
 
-	if err = applyApplicationCategory(ms["application"]); err != nil {
+	if err = applyCategory(`application`, ms["application"]); err != nil {
 		return ``, err
 	}
 
