@@ -136,7 +136,7 @@ func LaunchPackager(ctx context.Context, p api.Packager) (string, error) {
 			Image: fmt.Sprintf(`%v:%v`, p.Repository, p.Tag),
 		},
 		&container.HostConfig{
-
+			NetworkMode: `none`,
 		},
 		&network.NetworkingConfig{
 
@@ -178,6 +178,7 @@ func LaunchDetective(ctx context.Context, pc string, c chan *bytes.Buffer, d api
 		},
 		&container.HostConfig{
 			VolumesFrom: []string{pc},
+			NetworkMode: `none`,
 		},
 		&network.NetworkingConfig{
 
