@@ -74,6 +74,8 @@ func applyApplicationCategory(c []manifest) error {
 			if len(root.Children) > 0 {
 				for _, child := range root.Children {
 					if child.Value == `from` ||
+						child.Value == `add` ||
+						child.Value == `copy` ||
 						child.Value == `shell` ||
 						child.Value == `entrypoint` ||
 						child.Value == `cmd` ||
@@ -92,3 +94,4 @@ func applyApplicationCategory(c []manifest) error {
 	}
 	return appendDockerfile(&b)
 }
+
