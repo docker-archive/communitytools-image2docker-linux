@@ -5,15 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"github.com/docker/docker/builder/dockerfile/parser"
-	path "path/filepath"
 )
 
-func getAddDirectivesForTars(ms []manifest) ([]byte, error) {
+func addProductMetadata() error {
 	b := new(bytes.Buffer)
-	for _, m := range ms {
-		b.WriteString(fmt.Sprintf("ADD %v/%v /\n", path.Join(`.`, m.Provisioner.Category), m.TarballName))
-	}
-	return b.Bytes(), nil
+	b.WriteString("LABEL com.docker.v2c.product=1\n")
+	return appendDockerfile(b)
 }
 
 func applyOSCategory(c []manifest) error {
