@@ -104,12 +104,17 @@ func Build(ctx context.Context, target string) (string, error) {
 		return ``, err
 	}
 
-	if err = applyCategory(`application`, ms["application"]); err != nil {
+	if err = applyCategory(`application`, ms[`application`]); err != nil {
 		return ``, err
 	}
 
-	// Dockerfile assembly phases
-	// FROM > COPY/ADD > EXPORT > ENV > RUN > SHELL/ENTRYPOINT/COMMAND
+	if err = applyCategory(`config`, ms[`config`]); err != nil {
+		return ``, err
+	}
+
+	if err = applyCategory(`init`, ms[`init`]); err != nil {
+		return ``, err
+	}
 
 	// TODO: run docker build
 
