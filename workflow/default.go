@@ -34,7 +34,6 @@ func Build(ctx context.Context, target string) (string, error) {
 
 	// Choose a Packager
 	packager := choosePackager(components)
-	fmt.Printf("Using packager: %v:%v\n", packager.Repository, packager.Tag)
 
 	// Launch the Packager
 	pc, err := system.LaunchPackager(ctx, packager)
@@ -77,12 +76,6 @@ func Build(ctx context.Context, target string) (string, error) {
 	results := map[string][]provisionerResponse{}
 	collectProvisionerResponses(ctx, pCount, prc, results)
 
-	//for category, prs := range results {
-	//	for _, tres := range prs {
-	//		fmt.Printf("Category: %v, Provisioner Tarball: %v\n\n", category, tres.Tarball)
-	//	}
-	//}
-
 	// We can cache at this point and prompt for conflict resolution if required.
 	// At this point we have a fully analyzed image and proposals for provisioning.
 	ms, err := persistProvisionerResults(results)
@@ -115,8 +108,6 @@ func Build(ctx context.Context, target string) (string, error) {
 	if err = applyCategory(`init`, ms[`init`]); err != nil {
 		return ``, err
 	}
-
-	// TODO: run docker build
 
 	return ``, nil
 }

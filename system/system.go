@@ -227,7 +227,7 @@ func LaunchDetective(ctx context.Context, pc string, c chan *bytes.Buffer, d api
 		panic(err)
 	}
 	if code != 0 {
-		fmt.Printf("Detective had no results: %v\n", code)
+		fmt.Printf("No results for %v:%v code: %v\n", d.Repository, d.Tag ,code)
 		stdout = nil
 	}
 

@@ -23,12 +23,7 @@ type readableResults struct {
 	Tarball     io.ReadCloser
 }
 
-//func openCategory(c string) ([]readableResults, error) {
-//
-//}
-
 func fetchContributedDockerfile(m manifest) ([]byte, error) {
-	fmt.Printf("Manifest: %v\n", m)
 	if m.TarballName == `` {
 		return []byte{}, nil
 	}
@@ -46,7 +41,6 @@ func fetchContributedDockerfile(m manifest) ([]byte, error) {
 	for {
 		h, err := r.Next()
 		if err == io.EOF {
-			fmt.Println("Does not contain a file named Dockerfile")
 			return nil, nil
 		}
 		if err != nil {
@@ -134,3 +128,4 @@ func persistProvisionerResults(r map[string][]provisionerResponse) (map[string][
 	}
 	return manifests, nil
 }
+
