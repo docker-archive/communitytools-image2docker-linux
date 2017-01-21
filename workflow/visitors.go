@@ -14,6 +14,9 @@ func addProductMetadata() error {
 }
 
 func applyOSCategory(c []manifest) error {
+	if len(c) < 1 {
+		return errors.New(`No operating system detected or provisioned.`)
+	}
 	if len(c) > 1 {
 		return errors.New(`OS category contains multiple results.`)
 	}

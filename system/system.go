@@ -3,12 +3,15 @@ package system
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"context"
+	"os"
 	"strings"
 	"github.com/docker/v2c/api"
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
@@ -124,12 +127,27 @@ func RemoveProducts(is []string, f bool, p bool) ([]types.ImageDelete, error) {
 	return result, nil
 }
 
-func LaunchPackager(ctx context.Context, p api.Packager) (string, error) {
+func LaunchPackager(ctx context.Context, p api.Packager, input string) (string, error) {
 	client, err := docker.NewEnvClient()
 	if err != nil {
 		return ``, err
 	}
 
+	// verify absent and create a named volume
+	volname := `v2c-transport`
+	if _, err = client.VolumeInspect(gcontext.Background(), volname); err == nil {
+		// TODO: Disable for release, but leave for testing
+		//return ``, fmt.Errorf(`The v2c-transport volume already exists.`)
+		return ``, nil
+	}
+	if _, err = client.VolumeCreate(gcontext.Background(), volume.VolumesCreateBody{
+				Name: volname,
+				Driver: `local`,
+			}); err != nil {
+		return ``, err
+	}
+
+	fmt.Printf("Creating container for %v:%v\n", p.Repository, p.Tag)
 	// Create
 	createResult, err := client.ContainerCreate(gcontext.Background(),
 		&container.Config{
@@ -137,10 +155,12 @@ func LaunchPackager(ctx context.Context, p api.Packager) (string, error) {
 		},
 		&container.HostConfig{
 			NetworkMode: `none`,
+			Binds: []string{
+				fmt.Sprintf(`%s:/input/input.vmdk`, input),
+				fmt.Sprintf(`%s:/v2c`, volname),
+			},
 		},
-		&network.NetworkingConfig{
-
-		},
+		&network.NetworkingConfig{},
 		fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%v/%v", p.Repository, p.Tag)))),
 	)
 	if err != nil {
@@ -150,12 +170,24 @@ func LaunchPackager(ctx context.Context, p api.Packager) (string, error) {
 	// Run
 	err = client.ContainerStart(gcontext.Background(),
 		createResult.ID,
-		types.ContainerStartOptions{
-
-		},
+		types.ContainerStartOptions{},
 	)
 	if err != nil {
 		return ``, err
+	}
+
+	// Wait for the container to stop
+	code, err := client.ContainerWait(gcontext.Background(), createResult.ID)
+	if err != nil {
+		panic(err)
+	}
+	if code != 0 {
+		logs, err := client.ContainerLogs(gcontext.Background(), createResult.ID, types.ContainerLogsOptions{})
+		if err != nil && logs != nil{
+			defer logs.Close()
+			io.Copy(os.Stderr, logs)
+		}
+		return ``, fmt.Errorf(`The packager failed with code: %v`, code)
 	}
 
 	// return container ID
@@ -169,20 +201,18 @@ func LaunchDetective(ctx context.Context, pc string, c chan *bytes.Buffer, d api
 	}
 
 	// Start a container from the image described by d
-	// include Volumes From pc
 
+	fmt.Printf("Creating container for %v:%v\n", d.Repository, d.Tag)
 	// Create
 	createResult, err := client.ContainerCreate(gcontext.Background(),
 		&container.Config{
 			Image: fmt.Sprintf(`%v:%v`, d.Repository, d.Tag),
 		},
 		&container.HostConfig{
-			VolumesFrom: []string{pc},
+			Binds: []string{ `v2c-transport:/v2c:ro` },
 			NetworkMode: `none`,
 		},
-		&network.NetworkingConfig{
-
-		},
+		&network.NetworkingConfig{},
 		fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%v/%v", d.Repository, d.Tag)))),
 	)
 	if err != nil {
@@ -199,33 +229,38 @@ func LaunchDetective(ctx context.Context, pc string, c chan *bytes.Buffer, d api
 	// Run
 	err = client.ContainerStart(gcontext.Background(),
 		createResult.ID,
-		types.ContainerStartOptions{
-
-		},
+		types.ContainerStartOptions{},
 	)
 	if err != nil {
 		panic(err)
 	}
 
-	// Skip the first 8 bytes...
-	// TODO: do something a bit more purposeful
-	_, err = attachment.Reader.Discard(8)
-	if err != nil {
+	// Copy the buffer
+	stdout := new(bytes.Buffer)
+	for {
+		if _, err = attachment.Reader.Discard(4); err != nil {
+			break
+		}
+		var chunkSize uint32
+		if err = binary.Read(attachment.Reader, binary.BigEndian, &chunkSize); err != nil {
+			break
+		}
+		if _, err = io.CopyN(stdout, attachment.Reader, int64(chunkSize)); err != nil {
+			break
+		}
+	} 
+	if err != io.EOF {
 		panic(err)
 	}
 
-	// Read from attachment until conn is closed or eof or whatever...
-	stdout := new(bytes.Buffer)
-	_, err = io.Copy(stdout, attachment.Reader)
-	if err != nil && err != io.EOF {
-		panic(err)
-	}
 
 	// Wait for the container to stop
-	code, err := client.ContainerWait(ctx, createResult.ID)
+	var code int64
+	code, err = client.ContainerWait(ctx, createResult.ID)
 	if err != nil {
 		panic(err)
 	}
+
 	if code != 0 {
 		fmt.Printf("No results for %v:%v code: %v\n", d.Repository, d.Tag ,code)
 		stdout = nil
@@ -248,6 +283,7 @@ func LaunchProvisioner(ctx context.Context, in *bytes.Buffer, c chan *bytes.Buff
 		panic(err)
 	}
 
+	fmt.Printf("Creating container for %v:%v\n", p.Repository, p.Tag)
 	// Start a container from the image described by p
 	createResult, err := client.ContainerCreate(gcontext.Background(),
 		&container.Config{
@@ -293,19 +329,24 @@ func LaunchProvisioner(ctx context.Context, in *bytes.Buffer, c chan *bytes.Buff
 	}
 	attachment.CloseWrite()
 
-	// Skip the first 8 bytes...
-	// TODO: do something a bit more purposeful
-	_, err = attachment.Reader.Discard(8)
-	if err != nil {
+	// Copy the buffer
+	stdout := new(bytes.Buffer)
+	for {
+		if _, err = attachment.Reader.Discard(4); err != nil {
+			break
+		}
+		var chunkSize uint32
+		if err = binary.Read(attachment.Reader, binary.BigEndian, &chunkSize); err != nil {
+			break
+		}
+		if _, err = io.CopyN(stdout, attachment.Reader, int64(chunkSize)); err != nil {
+			break
+		}
+	} 
+	if err != io.EOF {
 		panic(err)
 	}
 
-	// read from attachment until conn is closed or eof or whatever...
-	stdout := new(bytes.Buffer)
-	_, err = io.Copy(stdout, attachment.Reader)
-	if err != nil && err != io.EOF {
-		panic(err)
-	}
 
 	// Wait for the container to stop
 	code, err := client.ContainerWait(ctx, createResult.ID)

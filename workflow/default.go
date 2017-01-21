@@ -36,7 +36,7 @@ func Build(ctx context.Context, target string) (string, error) {
 	packager := choosePackager(components)
 
 	// Launch the Packager
-	pc, err := system.LaunchPackager(ctx, packager)
+	pc, err := system.LaunchPackager(ctx, packager, target)
 	if err != nil {
 		return ``, err
 	}
@@ -55,9 +55,11 @@ func Build(ctx context.Context, target string) (string, error) {
 	pCount := len(detected)
 
 	// Shutdown the Packager
-	err = system.RemoveContainer(ctx, pc)
-	if err != nil {
-		return ``, err
+	if len(pc) > 0 {
+		err = system.RemoveContainer(ctx, pc)
+		if err != nil {
+			return ``, err
+		}
 	}
 
 	// Should quit early?
@@ -118,7 +120,6 @@ func Build(ctx context.Context, target string) (string, error) {
 
 func launchProvisioners(ctx context.Context, components system.Components, c chan provisionerResponse, rs *[]detectiveResponse) error {
 	for _, r := range *rs {
-		// TODO: replace the following with a lookup for the detectiveResponse.Next
 		var p api.Provisioner
 		for _, p = range components.Provisioners {
 			if s := fmt.Sprintf("%v:%v", p.Repository, p.Tag); s == r.Next {
