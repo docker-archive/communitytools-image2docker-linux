@@ -1,6 +1,5 @@
 FROM alpine:3.4
-COPY ./load1.tar /load.tar
 LABEL com.docker.v2c.component=detective \
       com.docker.v2c.component.category=os \
       com.docker.v2c.component.rel=v2c/ubuntu-provisioner:v16.04
-CMD cat /load.tar
+CMD grep "PRETTY_NAME=\"Ubuntu 16.04 LTS\"" /v2c/disk/etc/os-release 1>2 2>/dev/null
