@@ -1,0 +1,6 @@
+FROM alpine:3.4
+LABEL com.docker.v2c.component=detective \
+      com.docker.v2c.component.category=os \
+      com.docker.v2c.component.rel=v2c/ubuntu-provisioner:v14.04.5 \
+      com.docker.v2c.component.description=Detects\ Trusty\ Tahr
+CMD grep "PRETTY_NAME=\"Ubuntu 14.04.5 LTS\"" /v2c/disk/etc/os-release 1>2 2>/dev/null
