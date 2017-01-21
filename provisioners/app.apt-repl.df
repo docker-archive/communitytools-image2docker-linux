@@ -1,0 +1,8 @@
+FROM alpine:3.4
+LABEL com.docker.v2c.component=provisioner \
+      com.docker.v2c.component.category=application \
+      com.docker.v2c.component.description=Provisions\ every\ detected\ package\ via\ APT.
+WORKDIR /
+COPY ./app.apt-repl/Dockerfile /Dockerfile
+ENTRYPOINT ["/bin/sh", "-c"]
+CMD ["cat - >> /Dockerfile; tar cf - Dockerfile"]
