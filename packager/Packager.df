@@ -3,7 +3,9 @@ LABEL com.docker.v2c.component=packager \
       com.docker.v2c.component.category=demo \
       com.docker.v2c.component.description=demo\ packager\ description
 COPY ./copy.sh /copy.sh
-COPY ./payload.tar /payload.tar
+COPY ./etc /etc
+COPY ./var /var
+RUN tar cf payload.tar etc var
 VOLUME ["/v2c/disk"]
 CMD /copy.sh
 
