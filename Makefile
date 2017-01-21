@@ -70,7 +70,7 @@ release: build
 	@docker tag docker/v2c:latest docker/v2c:poc
 
 democlean:
-	@docker rmi $(docker images --filter label=com.docker.v2c.component.demo -aq)
+	@docker rmi $(shell docker images --filter label=com.docker.v2c.component.demo -aq)
 
 demoprep:
 	@docker build -t v2c/packager:demo -f ./packager/Packager.df ./packager/
@@ -86,7 +86,10 @@ demo-darwin:
 demo-linux:
 	@bin/v2c-linux64 build demo.vmdk
 
-builtins:
+builtin-clean:
+	@docker rmi $(shell docker images --filter label=com.docker.v2c.component.builtin -aq) 2>1 1>/dev/null
+
+builtin-prep:
 	@docker build -t v2c/centos-detective:v6.8 -f ./detectives/os.centos6.8.df ./detectives/
 	@docker build -t v2c/centos-provisioner:v6.8 -f ./provisioners/os.centos6.8.df ./provisioners/
 	@docker build -t v2c/ubuntu-detective:v16.04 -f ./detectives/os.ubuntu16.04.df ./detectives/
@@ -95,3 +98,5 @@ builtins:
 	@docker build -t v2c/ubuntu-provisioner:v14.04.5 -f ./provisioners/os.ubuntu14.04.5.df ./provisioners/
 	@docker build -t v2c/app.apt-repl.detective:1 -f ./detectives/app.apt-repl-nover.df ./detectives/
 	@docker build -t v2c/app.apt-repl.provisioner:1 -f ./provisioners/app.apt-repl.df ./provisioners/
+
+

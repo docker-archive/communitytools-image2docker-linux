@@ -1,6 +1,6 @@
 FROM alpine:3.4
-COPY ./load1.tar /load.tar
 LABEL com.docker.v2c.component=detective \
       com.docker.v2c.component.category=os \
+      com.docker.v2c.component.builtin=1 \
       com.docker.v2c.component.rel=v2c/centos-provisioner:v6.8
 CMD grep "CentOS release 6.8" /v2c/disk/etc/issue
