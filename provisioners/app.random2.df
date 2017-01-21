@@ -1,6 +1,7 @@
 FROM alpine:3.4
 LABEL com.docker.v2c.component=provisioner \
       com.docker.v2c.component.category=application \
+      com.docker.v2c.component.demo=1 \
       com.docker.v2c.component.description=demo\ provisioner\ description
 WORKDIR /
 COPY ./app.random2/tar-append /bin/tar-append

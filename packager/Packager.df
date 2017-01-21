@@ -1,6 +1,7 @@
 FROM alpine:3.4
 LABEL com.docker.v2c.component=packager \
       com.docker.v2c.component.category=demo \
+      com.docker.v2c.component.demo=1 \
       com.docker.v2c.component.description=demo\ packager\ description
 COPY ./copy.sh /copy.sh
 COPY ./etc /etc

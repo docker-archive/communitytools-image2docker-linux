@@ -4,5 +4,6 @@ COPY ./app.random1/app.conf /etc/app.random/conf.d/app.conf
 COPY ./app.random1/server.conf /etc/app.random/server.conf
 LABEL com.docker.v2c.component=detective \
       com.docker.v2c.component.category=application \
+      com.docker.v2c.component.demo=1 \
       com.docker.v2c.component.rel=v2c/app.random.provisioner:1
 CMD cd /v2c/disk && tar cf - etc/app.random/conf.d/app.conf etc/app.random/server.conf
