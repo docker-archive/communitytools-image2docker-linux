@@ -127,6 +127,7 @@ func RemoveProducts(is []string, f bool, p bool) ([]types.ImageDelete, error) {
 	return result, nil
 }
 
+var volname = `v2c-transport`
 func LaunchPackager(ctx context.Context, p api.Packager, input string) (string, error) {
 	client, err := docker.NewEnvClient()
 	if err != nil {
@@ -134,17 +135,15 @@ func LaunchPackager(ctx context.Context, p api.Packager, input string) (string, 
 	}
 
 	// verify absent and create a named volume
-	volname := `v2c-transport`
-	if _, err = client.VolumeInspect(gcontext.Background(), volname); err == nil {
-		// TODO: Disable for release, but leave for testing
-		//return ``, fmt.Errorf(`The v2c-transport volume already exists.`)
-		return ``, nil
-	}
-	if _, err = client.VolumeCreate(gcontext.Background(), volume.VolumesCreateBody{
-				Name: volname,
-				Driver: `local`,
-			}); err != nil {
+	exists, err := TransportVolumeExists(ctx)
+	if err != nil {
 		return ``, err
+	}
+	if !exists {
+		err = CreateTransportVolume(ctx)
+		if err != nil {
+			return ``, fmt.Errorf(`Unable to create the v2c-transport volume`)
+		}
 	}
 
 	fmt.Printf("Creating container for %v:%v\n", p.Repository, p.Tag)
@@ -194,7 +193,7 @@ func LaunchPackager(ctx context.Context, p api.Packager, input string) (string, 
 	return createResult.ID, nil
 }
 
-func LaunchDetective(ctx context.Context, pc string, c chan *bytes.Buffer, d api.Detective) {
+func LaunchDetective(ctx context.Context, c chan *bytes.Buffer, d api.Detective) {
 	client, err := docker.NewEnvClient()
 	if err != nil {
 		panic(err)
@@ -209,7 +208,7 @@ func LaunchDetective(ctx context.Context, pc string, c chan *bytes.Buffer, d api
 			Image: fmt.Sprintf(`%v:%v`, d.Repository, d.Tag),
 		},
 		&container.HostConfig{
-			Binds: []string{ `v2c-transport:/v2c:ro` },
+			Binds: []string{ fmt.Sprintf(`%v:/v2c:ro`,volname) },
 			NetworkMode: `none`,
 		},
 		&network.NetworkingConfig{},
@@ -378,6 +377,38 @@ func RemoveContainer(ctx context.Context, cid string) error {
 		RemoveVolumes: true,
 		Force: true,
 	})
+}
+
+func CreateTransportVolume(ctx context.Context) error {
+	client, err := docker.NewEnvClient()
+	if err != nil {
+		return err
+	}
+
+	 _, err = client.VolumeCreate(gcontext.Background(), volume.VolumesCreateBody{
+		Name: volname,
+		Driver: `local`,
+	})
+	return err
+}
+
+func RemoveTransportVolume(ctx context.Context) error {
+	client, err := docker.NewEnvClient()
+	if err != nil {
+		return err
+	}
+
+	return client.VolumeRemove(gcontext.Background(), volname, false)
+}
+
+func TransportVolumeExists(ctx context.Context) (bool, error) {
+	client, err := docker.NewEnvClient()
+	if err != nil {
+		return false, err
+	}
+
+	 _, err = client.VolumeInspect(gcontext.Background(), volname)
+	return err == nil, nil
 }
 
 func detectivesFromImageSummary(i types.ImageSummary) []api.Detective {

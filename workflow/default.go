@@ -23,29 +23,42 @@ type provisionerResponse struct {
 	Tarball     *bytes.Buffer
 }
 
-func Build(ctx context.Context, target string) (string, error) {
+func Build(ctx context.Context, target string, noclean bool) (string, error) {
 	components, err := system.DetectComponents()
 	if err != nil {
 		return ``, nil
 	}
-	if len(components.Packagers) == 0 {
-		return ``, errors.New(`no installed packagers`)
-	}
 
-	// Choose a Packager
-	packager := choosePackager(components)
-
-	// Launch the Packager
-	pc, err := system.LaunchPackager(ctx, packager, target)
+	// Setup the Packager->Detective transport volume
+	exists, err := system.TransportVolumeExists(ctx)
 	if err != nil {
 		return ``, err
 	}
-	defer system.RemoveContainer(ctx, pc)
+	var pc string
+	if exists {
+		fmt.Println(`Using existing unpacked image.`)
+	} else {
+		err = system.CreateTransportVolume(ctx)
+		if err != nil {
+			return ``, err
+		}
+
+		if len(components.Packagers) == 0 {
+			return ``, errors.New(`no installed packagers`)
+		}
+		packager := choosePackager(components)
+
+		pc, err = system.LaunchPackager(ctx, packager, target)
+		if err != nil {
+			return ``, err
+		}
+		defer system.RemoveContainer(ctx, pc)
+	}
 
 	// Launch Detectives
 	dr := make(chan detectiveResponse)
 	for _, d := range components.Detectives {
-		go launchDetective(ctx, d, pc, dr)
+		go launchDetective(ctx, d, dr)
 	}
 
 	// Collect Detective responses
@@ -111,6 +124,9 @@ func Build(ctx context.Context, target string) (string, error) {
 		return ``, err
 	}
 
+	if !noclean {
+		err = system.RemoveTransportVolume(ctx)
+	}
 	return ``, nil
 }
 
@@ -173,13 +189,13 @@ func choosePackager(c system.Components) api.Packager {
 // launch control
 //
 
-func launchDetective(ctx context.Context, d api.Detective, pc string, drc chan detectiveResponse) {
+func launchDetective(ctx context.Context, d api.Detective, drc chan detectiveResponse) {
 	r := detectiveResponse{
 		Category: d.Category,
 		Next:     d.Related,
 	}
 	tbc := make(chan *bytes.Buffer)
-	go system.LaunchDetective(ctx, pc, tbc, d)
+	go system.LaunchDetective(ctx, tbc, d)
 
 	select {
 	case r.Tarball = <-tbc:

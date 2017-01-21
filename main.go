@@ -46,6 +46,10 @@ func newApp() *cli.App {
 				cli.StringSliceFlag{
 					Name: `label, l`,
 				},
+				cli.BoolFlag{
+					Name:  `no-cleanup, n`,
+					Usage: `Do no delete unpacked disk`,
+				},
 			},
 			Action: buildHandler,
 		},
@@ -153,7 +157,7 @@ func buildHandler(c *cli.Context) error {
 		cancel()
 	}(cancel)
 
-	_, err = workflow.Build(ctx, abs)
+	_, err = workflow.Build(ctx, abs, c.Bool(`no-cleanup`))
 	return err
 }
 
