@@ -5,4 +5,4 @@ LABEL com.docker.v2c.component=detective \
       com.docker.v2c.component.description=Detects\ and\ describes\ all\ packages\ installed\ by\ APT.\
       com.docker.v2c.component.rel=v2c/app.apt-repl.provisioner:1
 ENTRYPOINT ["/bin/sh", "-c"]
-CMD ["cat /v2c/disk/var/lib/dpkg/status | awk 'BEGIN{ORS=\" \"; RS=\"\\n\\n+\"; FS=\"\\n\"} {s=\"\"; p=\"\"; for (i = 2; i <= NR; i++) { if($i ~ /^Priority/) {p = $i; } if($i ~/^Section/) {s = $i;} } if(substr(s,10)!=\"admin\" && substr(s,10)!=\"shells\" && substr(s,10)!=\"editors\") {print substr($1,10);} }'"]
+CMD ["cat /v2c/disk/var/lib/dpkg/status | awk 'BEGIN{ORS=\" \"; RS=\"\\n\\n+\"; FS=\"\\n\"} {s=\"\"; p=\"\"; for (i = 2; i <= NR; i++) { if($i ~ /^Priority/) {p = $i; } if($i ~/^Section/) {s = $i;} } t=substr(s,10); if(t!=\"admin\" && t!=\"shells\" && t!=\"editors\" && t!=\"kernel\" && t!=\"otherosfs\") {print substr($1,10);} }'"]

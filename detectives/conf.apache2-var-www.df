@@ -1,0 +1,9 @@
+FROM alpine:3.4
+LABEL com.docker.v2c.component=detective \
+      com.docker.v2c.component.category=config \
+      com.docker.v2c.component.builtin=1 \
+      com.docker.v2c.component.description=Detects\ and\ provides\ active\ Apache2\ var/www\ files. \
+      com.docker.v2c.component.rel=v2c/conf.apache2-var-www.provisioner:1
+WORKDIR /v2c/disk
+ENTRYPOINT ["/bin/sh", "-c"]
+CMD ["ls var/www &>/dev/null && grep -E \"^<Directory /var/www/>\" etc/apache2/apache2.conf &>/dev/null && tar c var/www"]

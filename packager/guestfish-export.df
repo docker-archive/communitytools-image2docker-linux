@@ -1,6 +1,7 @@
 FROM curator/guestfish
 LABEL com.docker.v2c.component=packager \
       com.docker.v2c.component.category=export \
+      com.docker.v2c.component.builtin=1 \
       com.docker.v2c.component.description=Copies\ disk\ contents\ into\ /v2c/disk
 COPY ./guestfish-export/script.sh /script.sh
 VOLUME ["/v2c"]

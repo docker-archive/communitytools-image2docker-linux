@@ -1,0 +1,7 @@
+FROM debian:jessie
+LABEL com.docker.v2c.component=provisioner \
+      com.docker.v2c.component.category=config \
+      com.docker.v2c.component.builtin=1 \
+      com.docker.v2c.component.description=Adds\ mysql5-datadir\ to\ the\ image.
+ENTRYPOINT ["/bin/sh","-c"]
+CMD ["cat -u"]

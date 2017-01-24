@@ -1,0 +1,10 @@
+FROM alpine:3.4
+LABEL com.docker.v2c.component=detective \
+      com.docker.v2c.component.category=config \
+      com.docker.v2c.component.builtin=1 \
+      com.docker.v2c.component.description=Detects\ and\ provides\ Mysql5\ configuration\ and\ data\ files. \
+      com.docker.v2c.component.rel=v2c/conf.mysql5-data.provisioner:1
+WORKDIR /v2c/disk
+ENTRYPOINT ["/bin/sh", "-c"]
+COPY conf.mysql5-data/script.sh /script.sh
+CMD ["/script.sh"]
