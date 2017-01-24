@@ -2,33 +2,33 @@ package system
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/network"
+	"github.com/docker/docker/api/types/volume"
+	docker "github.com/docker/docker/client"
+	"github.com/docker/v2c/api"
+	gcontext "golang.org/x/net/context"
 	"io"
-	"context"
 	"os"
 	"strings"
-	"github.com/docker/v2c/api"
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/volume"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/network"
-	docker "github.com/docker/docker/client"
-	gcontext "golang.org/x/net/context"
 )
 
 var (
-	labels = map[string]string {
-		`detective`: `detective`,
+	labels = map[string]string{
+		`detective`:   `detective`,
 		`provisioner`: `provisioner`,
-		`packager`: `packager`,
-		`product`: `com.docker.v2c.product`,
-		`component`: `com.docker.v2c.component`,
-		`category`: `com.docker.v2c.component.category`,
+		`packager`:    `packager`,
+		`product`:     `com.docker.v2c.product`,
+		`component`:   `com.docker.v2c.component`,
+		`category`:    `com.docker.v2c.component.category`,
 		`description`: `com.docker.v2c.component.description`,
-		`related`: `com.docker.v2c.component.rel`,
+		`related`:     `com.docker.v2c.component.rel`,
 	}
 )
 
@@ -48,7 +48,7 @@ func DetectComponents() (Components, error) {
 	f := filters.NewArgs()
 	f.Add(`label`, labels[`component`])
 
-	components, err := client.ImageList(gcontext.Background(), types.ImageListOptions{ Filters: f })
+	components, err := client.ImageList(gcontext.Background(), types.ImageListOptions{Filters: f})
 	if err != nil {
 		return result, err
 	}
@@ -86,18 +86,18 @@ func ListProducedImages() ([]api.Product, error) {
 			for _, t := range img.RepoTags {
 				p := strings.Split(t, `:`)
 				result = append(result, api.Product{
-					ImageID: img.ID,
+					ImageID:    img.ID,
 					Repository: p[0],
-					Tag: p[1],
-					Original: `original`,
-					Created: `date`,
+					Tag:        p[1],
+					Original:   `original`,
+					Created:    `date`,
 				})
 			}
 		} else {
 			result = append(result, api.Product{
-				ImageID: img.ID,
+				ImageID:  img.ID,
 				Original: `original`,
-				Created: `date`,
+				Created:  `date`,
 			})
 		}
 
@@ -113,7 +113,7 @@ func RemoveProducts(is []string, f bool, p bool) ([]types.ImageDelete, error) {
 		return result, err
 	}
 	opt := types.ImageRemoveOptions{
-		Force: f,
+		Force:         f,
 		PruneChildren: p,
 	}
 
@@ -128,6 +128,7 @@ func RemoveProducts(is []string, f bool, p bool) ([]types.ImageDelete, error) {
 }
 
 var volname = `v2c-transport`
+
 func LaunchPackager(ctx context.Context, p api.Packager, input string) (string, error) {
 	client, err := docker.NewEnvClient()
 	if err != nil {
@@ -182,7 +183,7 @@ func LaunchPackager(ctx context.Context, p api.Packager, input string) (string, 
 	}
 	if code != 0 {
 		logs, err := client.ContainerLogs(gcontext.Background(), createResult.ID, types.ContainerLogsOptions{})
-		if err != nil && logs != nil{
+		if err != nil && logs != nil {
 			defer logs.Close()
 			io.Copy(os.Stderr, logs)
 		}
@@ -208,7 +209,7 @@ func LaunchDetective(ctx context.Context, c chan *bytes.Buffer, d api.Detective)
 			Image: fmt.Sprintf(`%v:%v`, d.Repository, d.Tag),
 		},
 		&container.HostConfig{
-			Binds: []string{ fmt.Sprintf(`%v:/v2c:ro`,volname) },
+			Binds:       []string{fmt.Sprintf(`%v:/v2c:ro`, volname)},
 			NetworkMode: `none`,
 		},
 		&network.NetworkingConfig{},
@@ -219,7 +220,7 @@ func LaunchDetective(ctx context.Context, c chan *bytes.Buffer, d api.Detective)
 	}
 
 	// attach to the container
-	attachment, err := client.ContainerAttach(gcontext.Background(), createResult.ID, types.ContainerAttachOptions{ Stdin: false, Stdout: true, Stream: true })
+	attachment, err := client.ContainerAttach(gcontext.Background(), createResult.ID, types.ContainerAttachOptions{Stdin: false, Stdout: true, Stream: true})
 	if err != nil {
 		panic(err)
 	}
@@ -243,15 +244,14 @@ func LaunchDetective(ctx context.Context, c chan *bytes.Buffer, d api.Detective)
 		var chunkSize uint32
 		if err = binary.Read(attachment.Reader, binary.BigEndian, &chunkSize); err != nil {
 			break
-		} 
+		}
 		if _, err = io.CopyN(stdout, attachment.Reader, int64(chunkSize)); err != nil {
 			break
 		}
-	} 
+	}
 	if err != io.EOF {
 		panic(err)
 	}
-
 
 	// Wait for the container to stop
 	var code int64
@@ -261,7 +261,7 @@ func LaunchDetective(ctx context.Context, c chan *bytes.Buffer, d api.Detective)
 	}
 
 	if code != 0 {
-		fmt.Printf("No results for %v:%v code: %v\n", d.Repository, d.Tag ,code)
+		fmt.Printf("No results for %v:%v code: %v\n", d.Repository, d.Tag, code)
 		stdout = nil
 	}
 
@@ -286,17 +286,13 @@ func LaunchProvisioner(ctx context.Context, in *bytes.Buffer, c chan *bytes.Buff
 	// Start a container from the image described by p
 	createResult, err := client.ContainerCreate(gcontext.Background(),
 		&container.Config{
-			Image: fmt.Sprintf(`%v:%v`, p.Repository, p.Tag),
-			Tty:   false,
+			Image:     fmt.Sprintf(`%v:%v`, p.Repository, p.Tag),
+			Tty:       false,
 			OpenStdin: true,
 			StdinOnce: true,
 		},
-		&container.HostConfig{
-
-		},
-		&network.NetworkingConfig{
-
-		},
+		&container.HostConfig{},
+		&network.NetworkingConfig{},
 		fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%v/%v", p.Repository, p.Tag)))),
 	)
 	if err != nil {
@@ -304,7 +300,7 @@ func LaunchProvisioner(ctx context.Context, in *bytes.Buffer, c chan *bytes.Buff
 	}
 
 	// attach to the container
-	attachment, err := client.ContainerAttach(gcontext.Background(), createResult.ID, types.ContainerAttachOptions{ Stdin: true, Stdout: true, Stream: true })
+	attachment, err := client.ContainerAttach(gcontext.Background(), createResult.ID, types.ContainerAttachOptions{Stdin: true, Stdout: true, Stream: true})
 	if err != nil {
 		panic(err)
 	}
@@ -313,9 +309,7 @@ func LaunchProvisioner(ctx context.Context, in *bytes.Buffer, c chan *bytes.Buff
 	// Run
 	err = client.ContainerStart(gcontext.Background(),
 		createResult.ID,
-		types.ContainerStartOptions{
-
-		},
+		types.ContainerStartOptions{},
 	)
 	if err != nil {
 		panic(err)
@@ -378,7 +372,7 @@ func RemoveContainer(ctx context.Context, cid string) error {
 
 	return client.ContainerRemove(gcontext.Background(), cid, types.ContainerRemoveOptions{
 		RemoveVolumes: true,
-		Force: true,
+		Force:         true,
 	})
 }
 
@@ -388,8 +382,8 @@ func CreateTransportVolume(ctx context.Context) error {
 		return err
 	}
 
-	 _, err = client.VolumeCreate(gcontext.Background(), volume.VolumesCreateBody{
-		Name: volname,
+	_, err = client.VolumeCreate(gcontext.Background(), volume.VolumesCreateBody{
+		Name:   volname,
 		Driver: `local`,
 	})
 	return err
@@ -410,7 +404,7 @@ func TransportVolumeExists(ctx context.Context) (bool, error) {
 		return false, err
 	}
 
-	 _, err = client.VolumeInspect(gcontext.Background(), volname)
+	_, err = client.VolumeInspect(gcontext.Background(), volname)
 	return err == nil, nil
 }
 
@@ -423,20 +417,20 @@ func detectivesFromImageSummary(i types.ImageSummary) []api.Detective {
 				panic(`Malformed RepoTag for image ID: ` + i.ID)
 			}
 			result = append(result, api.Detective{
-				ImageID: i.ID,
-				Repository: p[0],
-				Tag: p[1],
-				Category: i.Labels[labels[`category`]],
+				ImageID:     i.ID,
+				Repository:  p[0],
+				Tag:         p[1],
+				Category:    i.Labels[labels[`category`]],
 				Description: i.Labels[labels[`description`]],
-				Related: i.Labels[labels[`related`]],
+				Related:     i.Labels[labels[`related`]],
 			})
 		}
 	} else {
 		result = append(result, api.Detective{
-			ImageID: i.ID,
-			Repository: `<none>`,
-			Tag: `<none>`,
-			Category: i.Labels[labels[`category`]],
+			ImageID:     i.ID,
+			Repository:  `<none>`,
+			Tag:         `<none>`,
+			Category:    i.Labels[labels[`category`]],
 			Description: i.Labels[labels[`description`]],
 		})
 	}
@@ -452,19 +446,19 @@ func provisionersFromImageSummary(i types.ImageSummary) []api.Provisioner {
 				panic(`Malformed RepoTag for image ID: ` + i.ID)
 			}
 			result = append(result, api.Provisioner{
-				ImageID: i.ID,
-				Repository: p[0],
-				Tag: p[1],
-				Category: i.Labels[labels[`category`]],
+				ImageID:     i.ID,
+				Repository:  p[0],
+				Tag:         p[1],
+				Category:    i.Labels[labels[`category`]],
 				Description: i.Labels[labels[`description`]],
 			})
 		}
 	} else {
 		result = append(result, api.Provisioner{
-			ImageID: i.ID,
-			Repository: `<none>`,
-			Tag: `<none>`,
-			Category: i.Labels[labels[`category`]],
+			ImageID:     i.ID,
+			Repository:  `<none>`,
+			Tag:         `<none>`,
+			Category:    i.Labels[labels[`category`]],
 			Description: i.Labels[labels[`description`]],
 		})
 	}
@@ -480,22 +474,21 @@ func packagersFromImageSummary(i types.ImageSummary) []api.Packager {
 				panic(`Malformed RepoTag for image ID: ` + i.ID)
 			}
 			result = append(result, api.Packager{
-				ImageID: i.ID,
-				Repository: p[0],
-				Tag: p[1],
-				Category: i.Labels[labels[`category`]],
+				ImageID:     i.ID,
+				Repository:  p[0],
+				Tag:         p[1],
+				Category:    i.Labels[labels[`category`]],
 				Description: i.Labels[labels[`description`]],
 			})
 		}
 	} else {
 		result = append(result, api.Packager{
-			ImageID: i.ID,
-			Repository: `<none>`,
-			Tag: `<none>`,
-			Category: i.Labels[labels[`category`]],
+			ImageID:     i.ID,
+			Repository:  `<none>`,
+			Tag:         `<none>`,
+			Category:    i.Labels[labels[`category`]],
 			Description: i.Labels[labels[`description`]],
 		})
 	}
 	return result
 }
-

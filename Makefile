@@ -20,7 +20,7 @@ fmt:
 	  -v $(PWD):/go/src/github.com/docker/v2c \
 	  -w /go/src/github.com/docker/v2c \
 	  docker/v2c:build-tooling \
-	  go fmt
+	  go fmt ./...
 
 lint:
 	# Linting

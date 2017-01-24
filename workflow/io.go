@@ -130,4 +130,3 @@ func persistProvisionerResults(r map[string][]provisionerResponse) (map[string][
 	}
 	return manifests, nil
 }
-
