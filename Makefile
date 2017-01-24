@@ -87,7 +87,7 @@ demo-linux:
 	@bin/v2c-linux64 build demo.vmdk
 
 builtin-clean:
-	@docker rmi $(shell docker images --filter label=com.docker.v2c.component.builtin -aq) 2>1 1>/dev/null || true
+	@docker rmi $(shell docker images --filter label=com.docker.v2c.component.builtin -aq) &>/dev/null || true
 
 builtin-prep:
 	@docker build -t v2c/guestfish-export:1 -f ./packager/guestfish-export.df ./packager/
