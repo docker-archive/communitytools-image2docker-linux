@@ -243,7 +243,7 @@ func LaunchDetective(ctx context.Context, c chan *bytes.Buffer, d api.Detective)
 		var chunkSize uint32
 		if err = binary.Read(attachment.Reader, binary.BigEndian, &chunkSize); err != nil {
 			break
-		}
+		} 
 		if _, err = io.CopyN(stdout, attachment.Reader, int64(chunkSize)); err != nil {
 			break
 		}
@@ -321,31 +321,34 @@ func LaunchProvisioner(ctx context.Context, in *bytes.Buffer, c chan *bytes.Buff
 		panic(err)
 	}
 
-	// write the data from in to the con
-	_, err = in.WriteTo(attachment.Conn)
-	if err != nil {
-		panic(err)
-	}
-	attachment.CloseWrite()
+	// write the data from in to the con in parallel with read
+	go func() {
+		_, err = in.WriteTo(attachment.Conn)
+		if err != nil {
+			panic(err)
+		}
+		attachment.CloseWrite()
+	}()
 
 	// Copy the buffer
 	stdout := new(bytes.Buffer)
-	for {
-		if _, err = attachment.Reader.Discard(4); err != nil {
-			break
+	go func() {
+		for {
+			if _, err = attachment.Reader.Discard(4); err != nil {
+				break
+			}
+			var chunkSize uint32
+			if err = binary.Read(attachment.Reader, binary.BigEndian, &chunkSize); err != nil {
+				break
+			}
+			if _, err = io.CopyN(stdout, attachment.Reader, int64(chunkSize)); err != nil {
+				break
+			}
 		}
-		var chunkSize uint32
-		if err = binary.Read(attachment.Reader, binary.BigEndian, &chunkSize); err != nil {
-			break
+		if err != io.EOF {
+			panic(err)
 		}
-		if _, err = io.CopyN(stdout, attachment.Reader, int64(chunkSize)); err != nil {
-			break
-		}
-	} 
-	if err != io.EOF {
-		panic(err)
-	}
-
+	}()
 
 	// Wait for the container to stop
 	code, err := client.ContainerWait(ctx, createResult.ID)

@@ -93,16 +93,18 @@ func persistProvisionerResults(r map[string][]provisionerResponse) (map[string][
 		return nil, err
 	}
 
-	// TODO: check write access
-
 	manifests := map[string][]manifest{}
 
 	for c, prs := range r {
 		// make a category subdir
 		p := path.Join(d, c)
-		if err = os.Mkdir(p, cwdPerm); err != nil {
-			return nil, err
+		_, err = os.Stat(p)
+		if err != nil {
+			if err = os.Mkdir(p, cwdPerm); err != nil {
+				return nil, err
+			}
 		}
+		err = nil
 		// write each tarball and a brief JSON manifest for the response
 		for _, pr := range prs {
 			h := sha256.Sum256([]byte(fmt.Sprintf("%v:%v", pr.Provisioner.Repository, pr.Provisioner.Tag)))
