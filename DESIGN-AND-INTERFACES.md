@@ -36,9 +36,9 @@ Detectives have no network access. Detectives should not block on data from STDI
 Images that contain detectives are recognized by setting the following image labels:
 
 * com.docker.v2c.component=detective
-* com.docker.v2c.component.category=<the category>
-* com.docker.v2c.component.description=<a brief description of the detective>
-* com.docker.v2c.component.rel=<the full repository identifier of the related provisioner>
+* com.docker.v2c.component.category=&lt;the category&gt;
+* com.docker.v2c.component.description=&lt;a brief description of the detective&gt;
+* com.docker.v2c.component.rel=&lt;the full repository identifier of the related provisioner&gt;
 
 If no detectives signal a successful detection to the orchestrator then processing will hault.
 
@@ -62,5 +62,5 @@ Final assembly is orchestrated by processing known categories of results in a sp
 Provisioners are identified with the following labels:
 
 * com.docker.v2c.component=provisioner
-* com.docker.v2c.component.category=<category>
-* com.docker.v2c.component.description=<a short description>
+* com.docker.v2c.component.category=&lt;category&gt;
+* com.docker.v2c.component.description=&lt;a short description&gt;
