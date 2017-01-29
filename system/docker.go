@@ -156,7 +156,7 @@ func LaunchPackager(ctx context.Context, p api.Packager, input string) (string, 
 		&container.HostConfig{
 			NetworkMode: `none`,
 			Binds: []string{
-				fmt.Sprintf(`%s:/input/input.vmdk`, input),
+				fmt.Sprintf(`%s:/input/input`, input),
 				fmt.Sprintf(`%s:/v2c`, volname),
 			},
 		},
