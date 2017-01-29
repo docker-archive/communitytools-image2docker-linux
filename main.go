@@ -157,6 +157,10 @@ func buildHandler(c *cli.Context) error {
 		cancel()
 	}(cancel)
 
+	if c.Bool(`no-cleanup`) {
+		fmt.Println(`Unpacked input will not be cleaned up upon completion.`)
+	}
+
 	_, err = workflow.Build(ctx, abs, c.Bool(`no-cleanup`))
 	return err
 }

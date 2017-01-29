@@ -54,6 +54,15 @@ func Build(ctx context.Context, target string, noclean bool) (string, error) {
 		}
 		defer system.RemoveContainer(ctx, pc)
 	}
+	defer func() {
+		if !noclean {
+			if err = system.RemoveTransportVolume(ctx); err != nil {
+				fmt.Printf("Unable to remove the transport volume due to: %v\n", err)
+			}
+		} else {
+			fmt.Println(`The transport volume remains intact.`)
+		}
+	}()
 
 	// Launch Detectives
 	dr := make(chan detectiveResponse)
@@ -124,10 +133,7 @@ func Build(ctx context.Context, target string, noclean bool) (string, error) {
 		return ``, err
 	}
 
-	if !noclean {
-		err = system.RemoveTransportVolume(ctx)
-	}
-	return ``, nil
+	return ``, err
 }
 
 //
