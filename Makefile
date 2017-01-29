@@ -70,10 +70,10 @@ release: build
 	@docker tag docker/v2c:latest docker/v2c:poc
 
 democlean:
-	@docker rmi $(shell docker images --filter label=com.docker.v2c.component.demo -aq)
+	@docker rmi $(shell docker images --filter label=com.docker.v2c.component.demo -aq) &>/dev/null || true
 
 demoprep:
-	@docker build -t v2c/packager:demo -f ./packager/Packager.df ./packager/
+	@docker build -t v2c/packager-demo:1 -f ./packager/demo/Packager.df ./packager/demo/
 	@docker build -t v2c/app.random-detective:1 -f ./detectives/app.random1.df ./detectives/
 	@docker build -t v2c/app.random-detective:2 -f ./detectives/app.random2.df ./detectives/
 	@docker build -t v2c/app.random-detective:3 -f ./detectives/app.random3.df ./detectives/

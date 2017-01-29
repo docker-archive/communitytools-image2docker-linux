@@ -6,7 +6,7 @@ LABEL com.docker.v2c.component=packager \
 COPY ./copy.sh /copy.sh
 COPY ./etc /etc
 COPY ./var /var
-RUN tar cf payload.tar etc var
-VOLUME ["/v2c/disk"]
+RUN tar cf /payload.tar etc var
+VOLUME ["/v2c"]
 CMD /copy.sh
 
