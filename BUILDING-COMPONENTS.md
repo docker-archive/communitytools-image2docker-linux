@@ -14,7 +14,7 @@ In all of these cases the detective shares this material by writing to its STDOU
 
 Detectives only determine if provisioning should occur and optionally pass along custom material from the input disk image. That is all. Installing software and placing custom materials into the resulting Docker image is a job for provisioners.
 
-### A Simple Detective
+## A Simple Detective
 
 The best detectives detect and capture something specific and do so with very minor tooling. Remember that v2c will run all detectives in parallel so feel free to create specialized detectives and leverage that parallelism to capture more nuanced cases. Don't feel the need to write one massive detective that handles every case.
 
@@ -55,4 +55,45 @@ Putting all this together in a Dockerfile will look like this:
           com.docker.v2c.component.rel=v2c/ubuntu-provisioner:v14.04.5 \
           com.docker.v2c.component.description=Detects\ the\ Trusty\ Tahr\ release\ of\ Ubuntu
     CMD grep "PRETTY_NAME=\"Ubuntu 14.04.5 LTS\"" /v2c/disk/etc/os-release 1>2 2>/dev/null
+
+## A Simple Provisioner
+
+The simple OS detective in the previous section really only signals that a specific provisioner should be executed. No materials are provided from the original disk image. In some cases like selecting a base image none are required. Provisioners in the ````os```` category are particularly simple. Like detectives a good provisioner should make very specific contributions to the resulting Dockerfile and filesystem. In this case the only contribution that needs to be made is a ````FROM```` instruction to the Dockerfile.
+
+All provisioners provide results to the workflow by writing a tar archive to STDOUT. Contributions to the final Dockerfile are communicated by including them in a Dockerfile at the "root" of that tar archive. An example might ease the confusion you're likely experiencing right now.
+
+Create a file named ````./os.ubuntu14.04.5/Dockerfile```` and drop in the instruction that you want to provide for final image assembly:
+
+    FROM ubuntu:14.04.5
+    ...
+
+Now create a Dockerfile for your provisioner named ````./os.ubuntu14.04.5.df```` and start putting together the provisioner. Again, the provisioner will need some basic system tools like a shell, and tar so ````alpine```` is a great base image to start with. Since this provisioner will always contribute the same Dockerfile fragment you could either generate that fragment on the fly each time before generating the tar archive or just add it to the image and generate the tar archive at build time. In this case just add the fragment to the root of the provisioner image at ````/Dockerfile```` and create the tar during image build.
+
+    FROM alpine
+    ...
+    COPY ./os.ubuntu14.04.5/Dockerfile /Dockerfile
+    RUN tar cf payload.tar Dockerfile
+    ...
+
+Now that the output material has been included with the provisioner you need to determine how to send that content to STDOUT at runtime. The ````cat```` command is a great way to accomplish this task.
+
+    FROM alpine
+    ...
+    COPY ./os.ubuntu14.04.5/Dockerfile /Dockerfile
+    RUN tar cf payload.tar Dockerfile
+    ENTRYPOINT ["/bin/sh"]
+    CMD ["-c", "cat /payload.tar"]
+
+Before v2c will discover and use the new provisioner you need to add the label metadata. Provisioners specify ````provisioner```` for the component label and the category should match that provided by the detective.
+
+    FROM alpine
+    LABEL com.docker.v2c.component=provisioner \
+          com.docker.v2c.component.category=os \
+          com.docker.v2c.component.description=Provisions\ Ubuntu\ Trusty\ Tahr\ images
+    COPY ./os.ubuntu14.04.5/Dockerfile /Dockerfile
+    RUN tar cf payload.tar Dockerfile
+    ENTRYPOINT ["/bin/sh"]
+    CMD ["-c", "cat /payload.tar"]
+
+
 
