@@ -131,8 +131,9 @@ func verifyContributedInstructionsForCategory(c string, root *parser.Node) strin
 				return child.Value
 			}
 		case `init`:
-			// only allow these two
+			// only allow these three
 			if child.Value != `entrypoint` &&
+				child.Value != `run` &&
 				child.Value != `cmd` {
 				return child.Value
 			}
