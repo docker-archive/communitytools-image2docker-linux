@@ -1,0 +1,10 @@
+FROM alpine:3.4
+LABEL com.docker.v2c.component=provisioner \
+      com.docker.v2c.component.category=init \
+      com.docker.v2c.component.builtin=1 \
+      com.docker.v2c.component.description=Include\ Apache2\ with\ launch\ services.
+COPY ./init.apache2/run /etc/service/apache2/run
+COPY ./init.apache2/Dockerfile /Dockerfile
+RUN tar cf payload.tar Dockerfile /etc/service/apache2/run
+ENTRYPOINT ["/bin/sh"]
+CMD ["-c", "cat /payload.tar"]
