@@ -1,9 +1,9 @@
 FROM alpine:3.4
 LABEL com.docker.v2c.component=provisioner \
-      com.docker.v2c.component.category=os \
+      com.docker.v2c.component.category=init \
       com.docker.v2c.component.builtin=1 \
       com.docker.v2c.component.description=Provisions\ Ubuntu\ Trusty\ Tahr\ images
-COPY ./os.ubuntu14.04.5/Dockerfile /Dockerfile
+COPY ./init.ubuntu14.04.5/Dockerfile /Dockerfile
 RUN tar cf payload.tar Dockerfile
 ENTRYPOINT ["/bin/sh"]
 CMD ["-c", "cat /payload.tar"]

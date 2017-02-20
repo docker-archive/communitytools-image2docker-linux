@@ -104,4 +104,13 @@ builtin-prep:
 	@docker build -t v2c/conf.mysql5-data.detective:1 -f ./detectives/conf.mysql5-data.df ./detectives/
 	@docker build -t v2c/conf.mysql5-data.provisioner:1 -f ./provisioners/conf.mysql5-data.df ./provisioners/
 
+	@docker build -t v2c/runit-detective:ubuntu-v14.04.5    -f ./detectives/init.ubuntu14.04.5.df ./detectives/
+	@docker build -t v2c/runit-provisioner:ubuntu-v14.04.5  -f ./provisioners/init.ubuntu14.04.5.df ./provisioners/
+
+	@docker build -t v2c/runit-detective:ubuntu-v16.04    -f ./detectives/init.ubuntu16.04.df   ./detectives/
+	@docker build -t v2c/runit-provisioner:ubuntu-v16.04  -f ./provisioners/init.ubuntu16.04.df ./provisioners/
+
+	@docker build -t v2c/init.apache2-sysv.detective:2 -f ./detectives/init.apache2-sysv.df ./detectives/
+	@docker build -t v2c/init.apache2-provisioner:2    -f ./provisioners/init.apache2.df    ./provisioners/
+
 
