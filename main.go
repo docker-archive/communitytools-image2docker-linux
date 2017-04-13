@@ -172,7 +172,7 @@ func installDetectiveHandler(c *cli.Context) error {
 		return errExactlyOne
 	}
 	fmt.Println("Installing a detective")
-	return nil
+	return fmt.Errorf(`Not yet implemented`)
 }
 
 func installProvisionerHandler(c *cli.Context) error {
@@ -180,7 +180,7 @@ func installProvisionerHandler(c *cli.Context) error {
 		return errExactlyOne
 	}
 	fmt.Println("Installing provisioners")
-	return nil
+	return fmt.Errorf(`Not yet implemented`)
 }
 
 func removeImageHandler(c *cli.Context) error {
@@ -196,7 +196,7 @@ func exportImageHandler(c *cli.Context) error {
 		return errExactlyOne
 	}
 	fmt.Println("Exporting an image")
-	return nil
+	return fmt.Errorf(`Not yet implemented`)
 }
 
 // list handlers

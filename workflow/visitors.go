@@ -9,7 +9,7 @@ import (
 
 func addProductMetadata() error {
 	b := new(bytes.Buffer)
-	b.WriteString("LABEL com.docker.v2c.product=1\n")
+	b.WriteString("LABEL com.docker.v2c.product=1\n\n")
 	return appendDockerfile(b)
 }
 
@@ -26,7 +26,7 @@ func applyOSCategory(c []manifest) error {
 		return err
 	}
 	if len(df) <= 0 {
-		appendDockerfile(bytes.NewBufferString("FROM scratch"))
+		appendDockerfile(bytes.NewBufferString(fmt.Sprintf("# No contributed Dockerfile from provisioner: %v:%v \nFROM scratch", m.Provisioner.Repository, m.Provisioner.Tag)))
 		return nil
 	}
 	dfr := bytes.NewReader(df)
@@ -48,7 +48,7 @@ func applyOSCategory(c []manifest) error {
 
 	// Add an extra newline
 	dfb := bytes.NewBuffer(df)
-	dfb.WriteString("\n")
+	dfb.WriteString("\n\n")
 	return appendDockerfile(dfb)
 
 }
@@ -58,6 +58,9 @@ func applyCategory(c string, ms []manifest) error {
 	// This visitor is going to take all of the tars in the category and add ADD instructions for them to /
 	var b bytes.Buffer
 	for _, m := range ms {
+		// Add a comment delimiting the section contributed by a specific provisioner
+		b.WriteString(fmt.Sprintf("# The following section contributed by %v category provisioner: %v:%v\n", c, m.Provisioner.Repository, m.Provisioner.Tag))
+
 		// The ADD instruction unpacks the tar file at the root.
 		// Only files with the exact same fully qualified name will be in conflict.
 		// This isn't a problem because all these files are being sourced from the same vmdk.
@@ -88,6 +91,7 @@ func applyCategory(c string, ms []manifest) error {
 
 			}
 		}
+		b.WriteString("\n")
 	}
 	return appendDockerfile(&b)
 }
