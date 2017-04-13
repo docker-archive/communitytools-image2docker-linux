@@ -1,0 +1,9 @@
+FROM alpine:3.4
+LABEL com.docker.v2c.component=provisioner \
+      com.docker.v2c.component.category=application \
+      com.docker.v2c.component.builtin=1 \
+      com.docker.v2c.component.description=Adds\ opt/tomcat\ to\ the\ image.
+COPY ./tar-append /bin/tar-append
+COPY ./app.tomcat8.5.5/Dockerfile /Dockerfile
+ENTRYPOINT ["/bin/sh","-c"]
+CMD ["tar-append /Dockerfile"]

@@ -1,0 +1,9 @@
+FROM debian:jessie
+LABEL com.docker.v2c.component=detective \
+      com.docker.v2c.component.category=config \
+      com.docker.v2c.component.builtin=1 \
+      com.docker.v2c.component.description=Detects\ and\ captures\ Apache\ Tomcat\ installed\ in\ /opt/tomcat \
+      com.docker.v2c.component.rel=v2c/app.tomcat8.5.5-provisioner:1
+WORKDIR /v2c/disk
+ENTRYPOINT ["/bin/sh", "-c"]
+CMD ["tar c opt/tomcat 2> /dev/null"]
