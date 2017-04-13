@@ -1,0 +1,10 @@
+FROM alpine:3.4
+LABEL com.docker.v2c.component=provisioner \
+      com.docker.v2c.component.category=init \
+      com.docker.v2c.component.builtin=1 \
+      com.docker.v2c.component.description=Include\ Tomcat\ with\ launch\ services.
+COPY ./init.tomcat-systemd/script.sh /script.sh
+COPY ./init.tomcat-systemd/Dockerfile /Dockerfile
+
+ENTRYPOINT ["/bin/sh"]
+CMD ["-c", "/script.sh"]

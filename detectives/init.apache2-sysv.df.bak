@@ -1,0 +1,9 @@
+FROM alpine:3.4
+LABEL com.docker.v2c.component=detective \
+      com.docker.v2c.component.category=init \
+      com.docker.v2c.component.builtin=1 \
+      com.docker.v2c.component.description=Detects\ SysV\ automatic\ startup\ for\ Apache2. \
+      com.docker.v2c.component.rel=v2c/init.apache2-provisioner:2
+WORKDIR /v2c/disk
+ENTRYPOINT ["/bin/sh", "-c"]
+CMD ["ls -al etc/rc2.d/S91apache2 2>1 1>/dev/null || ls -al etc/rc3.d/S91apache2 2>1 1>/dev/null || ls -al etc/rc4.d/S91apache2 2>1 1>/dev/null || ls -al etc/rc5.d/S91apache2 2>1 1>/dev/null"]

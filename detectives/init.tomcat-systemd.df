@@ -1,0 +1,9 @@
+FROM alpine:3.4
+LABEL com.docker.v2c.component=detective \
+      com.docker.v2c.component.category=init \
+      com.docker.v2c.component.builtin=1 \
+      com.docker.v2c.component.description=Detects\ Systemd\ unit\ and\ automatic\ startup\ for\ Tomcat. \
+      com.docker.v2c.component.rel=v2c/init.tomcat-provisioner:1
+WORKDIR /v2c/disk
+# If a unit named tomcat.service is enabled then dereference the symlink and lift the contents of the unit file
+CMD cat /v2c/disk$(stat -c %N etc/systemd/system/multi-user.target.wants/tomcat.service | awk '{print $3}' | sed -e 's/^.\(.*\).$/\1/') 2>/dev/null
