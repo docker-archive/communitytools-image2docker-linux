@@ -1,0 +1,7 @@
+FROM alpine:3.4
+LABEL com.docker.v2c.component=provisioner \
+      com.docker.v2c.component.category=config \
+      com.docker.v2c.component.builtin=1 \
+      com.docker.v2c.component.description=Adds\ etc/apache2\ to\ the\ image.
+ENTRYPOINT ["/bin/sh","-c"]
+CMD ["cat"]

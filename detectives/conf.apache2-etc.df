@@ -1,0 +1,9 @@
+FROM alpine:3.4
+LABEL com.docker.v2c.component=detective \
+      com.docker.v2c.component.category=config \
+      com.docker.v2c.component.builtin=1 \
+      com.docker.v2c.component.description=Detects\ and\ shifts\ Apache2\ configuration\ files. \
+      com.docker.v2c.component.rel=v2c/conf.apache2-etc.provisioner:1
+WORKDIR /v2c/disk
+ENTRYPOINT ["/bin/sh", "-c"]
+CMD ["ls etc/apache2 &>/dev/null && tar c etc/apache2"]
