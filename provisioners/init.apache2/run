@@ -1,2 +1,9 @@
 #!/bin/sh
-exec httpd -DNO_DETACH
+if [ -x /usr/sbin/apache2ctl ]; then
+  exec env -i LANG=C PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin APACHE_RUN_DIR=/var/run/apache2 APACHE_LOCK_DIR=/var/lock/apache2 APACHE_LOG_DIR=/var/log/apache2 APACHE_CONFDIR=/etc/apache2 APACHE_RUN_USER=www-data APACHE_RUN_GROUP=www-data apache2 -k start -DFOREGROUND
+elif [ -x /usr/sbin/httpd ]; then
+  exec /usr/sbin/httpd -DNO_DETACH
+else
+  print "Unknown Apache configuration. Unable to start."
+  exit 1
+fi
