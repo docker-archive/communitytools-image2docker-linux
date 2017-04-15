@@ -57,6 +57,24 @@ func fetchContributedDockerfile(m manifest) ([]byte, error) {
 	}
 }
 
+func isCWDEmpty() (bool, error) {
+	dn, err := os.Getwd()
+	if err != nil {
+		return false, err
+	}
+	f, err := os.Open(dn)
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+
+	_, err = f.Readdirnames(1)
+	if err == io.EOF {
+		return true, nil
+	}
+	return false, err
+}
+
 func appendDockerfile(b *bytes.Buffer) error {
 	dn, p, err := cwdAndPerms()
 	if err != nil {

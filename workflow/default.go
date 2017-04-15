@@ -24,6 +24,14 @@ type provisionerResponse struct {
 }
 
 func Build(ctx context.Context, target string, noclean bool) (string, error) {
+	if empty, err := isCWDEmpty(); !empty || err != nil {
+		if err != nil {
+			return ``, fmt.Errorf("Unable to determine if the current working directory is empty.")
+		} else {
+			return ``, fmt.Errorf("The current working directory is not empty.")
+		}
+	}
+
 	components, err := system.DetectComponents()
 	if err != nil {
 		return ``, nil
