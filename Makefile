@@ -98,6 +98,9 @@ builtin-prep:
 	@docker build -t v2c/ubuntu-detective:v16.04   -f ./detectives/os.ubuntu16.04.df ./detectives/
 	@docker build -t v2c/ubuntu-provisioner:v16.04 -f ./provisioners/os.ubuntu16.04.df ./provisioners/
 
+	@docker build -t v2c/ubuntu-detective:v16.04.1   -f ./detectives/os.ubuntu16.04.1.df ./detectives/
+	@docker build -t v2c/ubuntu-provisioner:v16.04.1 -f ./provisioners/os.ubuntu16.04.1.df ./provisioners/
+
 	@docker build -t v2c/ubuntu-detective:v16.10   -f ./detectives/os.ubuntu16.10.df ./detectives/
 	@docker build -t v2c/ubuntu-provisioner:v16.10 -f ./provisioners/os.ubuntu16.10.df ./provisioners/
 
@@ -121,6 +124,9 @@ builtin-prep:
 
 	@docker build -t v2c/runit-detective:ubuntu-v16.04    -f ./detectives/init.ubuntu16.04.df   ./detectives/
 	@docker build -t v2c/runit-provisioner:ubuntu-v16.04  -f ./provisioners/init.ubuntu16.04.df ./provisioners/
+
+	@docker build -t v2c/runit-detective:ubuntu-v16.04.1    -f ./detectives/init.ubuntu16.04.1.df   ./detectives/
+	@docker build -t v2c/runit-provisioner:ubuntu-v16.04.1  -f ./provisioners/init.ubuntu16.04.1.df ./provisioners/
 
 	@docker build -t v2c/runit-detective:ubuntu-v16.10    -f ./detectives/init.ubuntu16.10.df   ./detectives/
 	@docker build -t v2c/runit-provisioner:ubuntu-v16.10  -f ./provisioners/init.ubuntu16.10.df ./provisioners/
