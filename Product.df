@@ -1,4 +1,0 @@
-FROM scratch
-LABEL com.docker.v2c.product=1
-ENV test=1
-ENV test2=2
