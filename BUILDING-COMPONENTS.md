@@ -95,5 +95,49 @@ Before v2c will discover and use the new provisioner you need to add the label m
     ENTRYPOINT ["/bin/sh"]
     CMD ["-c", "cat /payload.tar"]
 
+## Starting Services Inside the Container
+
+Replicating the behavior you'd expect when a virtual machine boots is tricky in a container. Containers are designed to isolate single processes or a collection of processes. As such Docker and containers are payload agnostic. If you wish to start a collection of services when you launch a container, that container needs to bring its own init system. That system should be both capable of service monitoring and proper signal handling.
+
+The tight coupling between the resulting Dockerfile, the init system, and generalized component detection makes building a general solution particularly challenging. This lift-and-shift project takes an opinionated approach. This project creates images that use runit for an init system and runs detectives and provisioners in the ````init```` category.
+
+This opinion is flexible. Since there are many methods of installing ````runit```` onto a target operating system image we require that this init system is provisioned similar to operating systems. For example...
+
+#### Ubuntu 14.04.5 Init Detective
+
+    FROM alpine:3.4
+    LABEL com.docker.v2c.component=detective \
+          com.docker.v2c.component.category=init \
+          com.docker.v2c.component.builtin=1 \
+          com.docker.v2c.component.rel=v2c/runit-provisioner:ubuntu-v14.04.5 \
+          com.docker.v2c.component.description=Detects\ Trusty\ Tahr
+    CMD grep "PRETTY_NAME=\"Ubuntu 14.04.5 LTS\"" /v2c/disk/etc/os-release 1>2 2>/dev/null
+
+#### Ubuntu 14.04.5 Runit Provisioner Contributed Dockerfile Fragment
+
+    RUN apt-get update && apt-get install -y runit
+    ENTRYPOINT ["runsvdir","-P","/etc/service"]
+    STOPSIGNAL SIGHUP
+
+You'll notice that the init detective for Ubuntu 14.04.5 is the same as the OS detective for the same version. However the important difference is that this detective is in the init category and points to ````runit-provisioner:ubuntu-v14.04.5````. That provisioner contributes a very simple Dockerfile fragment which installs runit for the target OS, sets the entrypoint, and sets the stop signal.
+
+Runit stops on SIGHUP. That is important to note if you can't figure out why SIGINT fails to stop your container.
+
+The most important part of the Dockerfile fragment is that the entrypoint tells runit to look for service definitions in /etc/services. Now any other packages that have been detected for the various source init systems out there can contribute runit service definitions to a known location.
+
+#### Apache2 SysV Service Detective
+
+    FROM alpine:3.4
+    LABEL com.docker.v2c.component=detective \
+          com.docker.v2c.component.category=init \
+          com.docker.v2c.component.builtin=1 \
+          com.docker.v2c.component.description=Detects\ SysV\ automatic\ startup\ for\ Apache2. \
+          com.docker.v2c.component.rel=v2c/init.apache2-provisioner:2
+    CMD ls -al /v2c/disk/etc/rc2.d/S91apache2 2>1 1>/dev/null || ls -al /v2c/disk/etc/rc3.d/S91apache2 2>1 1>/dev/null || ls -al /v2c/disk/etc/rc4.d/S91apache2 2>1 1>/dev/null || ls -al /v2c/disk/etc/rc5.d/S91apache2 2>1 1>/dev/null
+
+This detective specifically detects Apache2 as commonly installed for System V init systems. Ubuntu 14.04.5 uses Upstart, but Apache2 packages are unaware of Upstart and so install the Apache2 service into System V runlevels pointing to a script in /etc/init.d.
+
+#### Apache2 Runit Service Provisioner
+
 
 
