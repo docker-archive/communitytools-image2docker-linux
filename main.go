@@ -43,15 +43,24 @@ func newApp() *cli.App {
 					Name:  `tag, t`,
 					Usage: "Tag the resulting image with `REPOSITORY[:TAG]`",
 				},
-				cli.StringSliceFlag{
-					Name: `label, l`,
-				},
 				cli.BoolFlag{
 					Name:  `no-cleanup, n`,
 					Usage: `Do no delete unpacked disk`,
 				},
 			},
 			Action: buildHandler,
+		},
+		{
+			Name:     `local-build`,
+			Usage:    `transform the host root partition into a container image`,
+			Category: `Transform`,
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  `tag, t`,
+					Usage: "Tag the resulting image with `REPOSITORY[:TAG]`",
+				},
+			},
+			Action: localBuildHandler,
 		},
 		{
 			Name:     `image`,
@@ -162,6 +171,37 @@ func buildHandler(c *cli.Context) error {
 	}
 
 	_, err = workflow.Build(ctx, abs, c.Bool(`no-cleanup`))
+	return err
+}
+
+func localBuildHandler(c *cli.Context) error {
+	if c.NArg() != 1 {
+		return errExactlyOne
+	}
+	fmt.Println("Running local transformation.")
+
+	abs, err := filepath.Abs(c.Args().Get(0))
+	if err != nil {
+		return err
+	}
+	_, err = os.Stat(abs)
+	if err != nil {
+		return err
+	}
+
+	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+	)
+	ctx, cancel = context.WithCancel(context.Background())
+	go func(cancel context.CancelFunc) {
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, os.Interrupt)
+		<-c
+		cancel()
+	}(cancel)
+
+	_, err = workflow.BuildLocal(ctx, abs)
 	return err
 }
 

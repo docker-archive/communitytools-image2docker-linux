@@ -12,9 +12,10 @@ import (
 var errNotYetImplemented = errors.New(`not yet implemented`)
 
 type detectiveResponse struct {
-	Category string
-	Next     string
-	Tarball  *bytes.Buffer
+	Detective string
+	Category  string
+	Next      string
+	Tarball   *bytes.Buffer
 }
 
 type provisionerResponse struct {
@@ -23,13 +24,102 @@ type provisionerResponse struct {
 	Tarball     *bytes.Buffer
 }
 
-func Build(ctx context.Context, target string, noclean bool) (string, error) {
+func buildChecks() error {
 	if empty, err := isCWDEmpty(); !empty || err != nil {
 		if err != nil {
-			return ``, fmt.Errorf("Unable to determine if the current working directory is empty.")
+			return fmt.Errorf("Unable to determine if the current working directory is empty.")
 		} else {
-			return ``, fmt.Errorf("The current working directory is not empty.")
+			return fmt.Errorf("The current working directory is not empty.")
 		}
+	}
+	return nil
+}
+
+func BuildLocal(ctx context.Context, abs string) (string, error) {
+	if err := buildChecks(); err != nil {
+		return ``, err
+	}
+
+	components, err := system.DetectComponents()
+	if err != nil {
+		return ``, nil
+	}
+
+	// No packager work, simply create a bind mount from / to
+
+	// Launch Detectives
+	dr := make(chan detectiveResponse)
+	for _, d := range components.Detectives {
+		go launchDetective(ctx, d, dr, abs)
+	}
+
+	// Collect Detective responses
+	detected := []detectiveResponse{}
+	collectDetectiveResponses(ctx, len(components.Detectives), dr, &detected)
+
+	pCount := len(detected)
+	if pCount > 0 {
+		fmt.Printf("Result found for:\n")
+	}
+	for _, dr := range detected {
+		fmt.Printf("\t%v\n", dr.Detective)
+	}
+
+	// Should quit early?
+	if pCount == 0 {
+		return ``, errors.New(`No components were detected.`)
+	}
+
+	// Launch Provisioners
+	prc := make(chan provisionerResponse)
+	err = launchProvisioners(ctx, components, prc, &detected)
+	if err != nil {
+		return ``, err
+	}
+
+	// Collect provisioned build contexts
+	results := map[string][]provisionerResponse{}
+	collectProvisionerResponses(ctx, pCount, prc, results)
+
+	// We can cache at this point and prompt for conflict resolution if required.
+	// At this point we have a fully analyzed image and proposals for provisioning.
+	ms, err := persistProvisionerResults(results)
+	if err != nil {
+		return ``, err
+	}
+
+	// Build context assembly pipeline
+	// This could look like a pipeline where the result of one phase is piped to the next.
+	// But we'd end up copying an amazing amount of data in memory and pipelines / nested functions
+	// can be difficult to read. For the PoC we'll use a visitor pattern instead.
+	// Need to process in category ordering - Operating System > Tooling > Platform > Application > Configuration
+
+	if err = applyOSCategory(ms["os"]); err != nil {
+		return ``, err
+	}
+
+	if err = addProductMetadata(); err != nil {
+		return ``, err
+	}
+
+	if err = applyCategory(`application`, ms[`application`]); err != nil {
+		return ``, err
+	}
+
+	if err = applyCategory(`config`, ms[`config`]); err != nil {
+		return ``, err
+	}
+
+	if err = applyCategory(`init`, ms[`init`]); err != nil {
+		return ``, err
+	}
+
+	return ``, err
+}
+
+func Build(ctx context.Context, target string, noclean bool) (string, error) {
+	if err := buildChecks(); err != nil {
+		return ``, err
 	}
 
 	components, err := system.DetectComponents()
@@ -75,7 +165,7 @@ func Build(ctx context.Context, target string, noclean bool) (string, error) {
 	// Launch Detectives
 	dr := make(chan detectiveResponse)
 	for _, d := range components.Detectives {
-		go launchDetective(ctx, d, dr)
+		go launchDetective(ctx, d, dr, system.VOLNAME)
 	}
 
 	// Collect Detective responses
@@ -83,6 +173,12 @@ func Build(ctx context.Context, target string, noclean bool) (string, error) {
 	collectDetectiveResponses(ctx, len(components.Detectives), dr, &detected)
 
 	pCount := len(detected)
+	if pCount > 0 {
+		fmt.Printf("Result found for:\n")
+	}
+	for _, dr := range detected {
+		fmt.Printf("\t%v\n", dr.Detective)
+	}
 
 	// Shutdown the Packager
 	if len(pc) > 0 {
@@ -203,13 +299,14 @@ func choosePackager(c system.Components) api.Packager {
 // launch control
 //
 
-func launchDetective(ctx context.Context, d api.Detective, drc chan detectiveResponse) {
+func launchDetective(ctx context.Context, d api.Detective, drc chan detectiveResponse, tvn string) {
 	r := detectiveResponse{
-		Category: d.Category,
-		Next:     d.Related,
+		Detective: fmt.Sprintf(`%v:%v`, d.Repository, d.Tag),
+		Category:  d.Category,
+		Next:      d.Related,
 	}
 	tbc := make(chan *bytes.Buffer)
-	go system.LaunchDetective(ctx, tbc, d)
+	go system.LaunchDetective(ctx, tbc, d, tvn)
 
 	select {
 	case r.Tarball = <-tbc:

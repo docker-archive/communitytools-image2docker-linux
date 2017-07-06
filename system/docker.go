@@ -127,7 +127,7 @@ func RemoveProducts(is []string, f bool, p bool) ([]types.ImageDelete, error) {
 	return result, nil
 }
 
-var volname = `v2c-transport`
+var VOLNAME = `v2c-transport`
 
 func LaunchPackager(ctx context.Context, p api.Packager, input string) (string, error) {
 	client, err := docker.NewEnvClient()
@@ -157,7 +157,7 @@ func LaunchPackager(ctx context.Context, p api.Packager, input string) (string, 
 			NetworkMode: `none`,
 			Binds: []string{
 				fmt.Sprintf(`%s:/input/input`, input),
-				fmt.Sprintf(`%s:/v2c`, volname),
+				fmt.Sprintf(`%s:/v2c`, VOLNAME),
 			},
 		},
 		&network.NetworkingConfig{},
@@ -194,7 +194,7 @@ func LaunchPackager(ctx context.Context, p api.Packager, input string) (string, 
 	return createResult.ID, nil
 }
 
-func LaunchDetective(ctx context.Context, c chan *bytes.Buffer, d api.Detective) {
+func LaunchDetective(ctx context.Context, c chan *bytes.Buffer, d api.Detective, tvn string) {
 	client, err := docker.NewEnvClient()
 	if err != nil {
 		panic(err)
@@ -209,7 +209,7 @@ func LaunchDetective(ctx context.Context, c chan *bytes.Buffer, d api.Detective)
 			Image: fmt.Sprintf(`%v:%v`, d.Repository, d.Tag),
 		},
 		&container.HostConfig{
-			Binds:       []string{fmt.Sprintf(`%v:/v2c:ro`, volname)},
+			Binds:       []string{fmt.Sprintf(`%v:/v2c:ro`, tvn)},
 			NetworkMode: `none`,
 		},
 		&network.NetworkingConfig{},
@@ -383,7 +383,7 @@ func CreateTransportVolume(ctx context.Context) error {
 	}
 
 	_, err = client.VolumeCreate(gcontext.Background(), volume.VolumesCreateBody{
-		Name:   volname,
+		Name:   VOLNAME,
 		Driver: `local`,
 	})
 	return err
@@ -395,7 +395,7 @@ func RemoveTransportVolume(ctx context.Context) error {
 		return err
 	}
 
-	return client.VolumeRemove(gcontext.Background(), volname, false)
+	return client.VolumeRemove(gcontext.Background(), VOLNAME, false)
 }
 
 func TransportVolumeExists(ctx context.Context) (bool, error) {
@@ -404,7 +404,7 @@ func TransportVolumeExists(ctx context.Context) (bool, error) {
 		return false, err
 	}
 
-	_, err = client.VolumeInspect(gcontext.Background(), volname)
+	_, err = client.VolumeInspect(gcontext.Background(), VOLNAME)
 	return err == nil, nil
 }
 
