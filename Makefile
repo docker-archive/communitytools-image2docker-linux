@@ -6,7 +6,7 @@ clean:
 
 # Prepare tooling
 prepare:
-	@docker build -t docker/v2c:build-tooling -f tooling.df .
+	@docker build -t docker/v2c:build-tooling -f ./tooling/tooling.df .
 
 update-deps:
 	@docker run --rm -v $(PWD):/go/src/github.com/docker/v2c -w /go/src/github.com/docker/v2c docker/v2c:build-tooling trash -u
