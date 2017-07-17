@@ -1,0 +1,9 @@
+FROM alpine:3.4
+LABEL com.docker.v2c.component=detective \
+      com.docker.v2c.component.category=application \
+      com.docker.v2c.component.builtin=1 \
+      com.docker.v2c.component.description=Detects\ and\ shifts\ Glassfish\ 3\ installed\ in\ /opt/glassfish3 \
+      com.docker.v2c.component.rel=v2c/app.glassfish3-provisioner:1
+WORKDIR /v2c/disk
+ENTRYPOINT ["/bin/sh", "-c"]
+CMD ["tar c opt/glassfish3 2> /dev/null"]

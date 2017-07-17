@@ -1,0 +1,9 @@
+FROM debian:jessie
+LABEL com.docker.v2c.component=provisioner \
+      com.docker.v2c.component.category=application \
+      com.docker.v2c.component.builtin=1 \
+      com.docker.v2c.component.description=Adds\ opt/glassfish4\ to\ the\ image.
+COPY ./tar-append /bin/tar-append
+COPY ./app.glassfish/Dockerfile /Dockerfile
+ENTRYPOINT ["/bin/sh","-c"]
+CMD ["tar-append /Dockerfile"]

@@ -138,3 +138,9 @@ builtin-prep:
 	@docker build -t v2c/app.tomcat8.5.5-provisioner:1 -f ./provisioners/app.tomcat8.5.5.df ./provisioners/
 	@docker build -t v2c/init.tomcat-detective:1   -f ./detectives/init.tomcat-systemd.df   ./detectives/
 	@docker build -t v2c/init.tomcat-provisioner:1 -f ./provisioners/init.tomcat-systemd.df ./provisioners/
+
+	@docker build -t vc2/app.glassfish4-detective:1 -f ./detectives/app.glassfish4.df ./detectives/
+	@docker build -t v2c/app.glassfish4-provisioner:1 -f ./provisioners/app.glassfish4.df ./provisioners/
+
+	@docker build -t vc2/app.glassfish3-detective:1 -f ./detectives/app.glassfish3.df ./detectives/
+	@docker build -t v2c/app.glassfish3-provisioner:1 -f ./provisioners/app.glassfish3.df ./provisioners/
